@@ -538,6 +538,22 @@ export default function App() {
   const [profileDraft, setProfileDraft] = useState(profileData);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync Clerk user data with profile on load
+  useEffect(() => {
+    if (user) {
+      setProfileData(prev => ({
+        ...prev,
+        name: prev.name || user.fullName || user.firstName || '',
+        avatarUrl: prev.avatarUrl || user.imageUrl || '',
+      }));
+      setProfileDraft(prev => ({
+        ...prev,
+        name: prev.name || user.fullName || user.firstName || '',
+        avatarUrl: prev.avatarUrl || user.imageUrl || '',
+      }));
+    }
+  }, [user]);
+
   type Friend = { id: string; name: string; title: string; school: string; firm: string; avatarUrl: string; specialties: string[]; addedAt: number };
   const [friends, setFriends] = useState<Friend[]>(() => {
     try { return JSON.parse(localStorage.getItem('arch_friends') || '[]'); } catch { return []; }
@@ -1345,8 +1361,13 @@ export default function App() {
                 </div>
               ) : (
                 <div className="flex-1">
-                  <h1 className="text-4xl font-black uppercase tracking-tighter text-white">{profileData.name || 'Unnamed Architect'}</h1>
+                  <h1 className="text-4xl font-black uppercase tracking-tighter text-white">{profileData.name || user?.fullName || 'Unnamed Architect'}</h1>
                   <p className="text-architectural-yellow font-mono text-sm uppercase tracking-widest mt-1 font-bold">{profileData.title}</p>
+                  {user?.primaryEmailAddress?.emailAddress && (
+                    <p className="text-gray-500 font-mono text-xs mt-1 flex items-center gap-1.5">
+                      <Icons.Mail size={12} /> {user.primaryEmailAddress.emailAddress}
+                    </p>
+                  )}
                   {profileData.bio && <p className="text-gray-400 text-sm mt-3 leading-relaxed max-w-xl">{profileData.bio}</p>}
                   <div className="flex flex-wrap gap-2 mt-4">
                     {profileData.school && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-mono text-blue-400 font-black"><Icons.GraduationCap size={11} />{profileData.school}</span>}
