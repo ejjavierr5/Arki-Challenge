@@ -842,6 +842,9 @@ export default function App() {
     });
   };
 
+  const levelInfo = getLevelInfo(totalXP);
+  const totalPoints = projects.filter(p => submittedIds.includes(p.id)).reduce((acc, p) => acc + ((p as any).points || 0), 0);
+
   const filtered = projects.filter(p => {
     const categoryMatch = filter === 'all' || p.category === filter;
     const difficultyMatch = difficultyFilter === 'all' || p.difficulty === difficultyFilter;
@@ -974,7 +977,7 @@ export default function App() {
                   <motion.div whileHover={{ y: -8 }} key={p.id} onClick={() => setSelectedProject(p)} className={cn("bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden cursor-pointer hover:border-white/20 hover:shadow-2xl transition-all duration-500", submittedIds.includes(p.id) && "opacity-40 grayscale")}>
                     <div className="aspect-[16/10] relative overflow-hidden"><img src={p.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" /><div className="absolute inset-0 bg-gradient-to-t from-[#0f1115] via-transparent p-6 flex flex-col justify-end">
                       <div className="flex items-center gap-2 mb-2"><span className="font-mono text-[9px] text-architectural-yellow border border-architectural-yellow/30 px-1.5 rounded">{p.plateNumber}</span><DifficultyBadge level={p.difficulty} /></div><h4 className="font-bold text-lg text-white leading-tight">{p.title}</h4></div></div>
-                    <div className="p-6 space-y-5"><div className="flex flex-wrap gap-1.5">{p.software.slice(0, 3).map(s => <SoftwareBadge key={s} s={s} />)}</div><div className="flex items-center justify-between text-[10px] font-mono text-gray-500 uppercase border-t border-white/5 pt-4"><span>{p.category}</span><div className="flex items-center gap-3"><span className="text-architectural-yellow font-black flex items-center gap-1"><Icons.Star size={9} fill="currentColor" />{(p as any).points} pts</span><div className="flex items-center gap-1 text-white font-bold group-hover:text-architectural-yellow transition-colors uppercase">VIEW INQUIRY <Icons.ChevronRight size={12} /></div></div></div></div>
+                    <div className="p-6 space-y-5"><div className="flex flex-wrap gap-1.5">{p.software.slice(0, 3).map(s => <SoftwareBadge key={s} s={s} />)}</div><div className="flex items-center justify-between text-[10px] font-mono text-gray-500 uppercase border-t border-white/5 pt-4"><span>{p.category}</span><div className="flex items-center gap-3"><span className="text-architectural-yellow font-black flex items-center gap-1"><Icons.Star size={9} fill="currentColor" />{(p as any).points} pts</span><span className="text-blue-400 font-black flex items-center gap-1"><Icons.Zap size={9} />{(p as any).xp} xp</span><div className="flex items-center gap-1 text-white font-bold group-hover:text-architectural-yellow transition-colors uppercase">VIEW INQUIRY <Icons.ChevronRight size={12} /></div></div></div></div>
                   </motion.div>
                 ))}
               </div>
@@ -1164,10 +1167,7 @@ export default function App() {
               );
             })()}
           </motion.section>
-        ) : currentView === 'profile' ? (() => {
-          const levelInfo = getLevelInfo(totalXP);
-          const totalPoints = projects.filter(p => submittedIds.includes(p.id)).reduce((acc, p) => acc + ((p as any).points || 0), 0);
-          return (
+        ) : currentView === 'profile' ? (
           <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
 
             {/* PROFILE HEADER */}
@@ -1319,8 +1319,6 @@ export default function App() {
               </div>
             </section>
           </motion.section>
-          );
-        })()
         ) : null}
       </main>
 
@@ -1461,7 +1459,7 @@ export default function App() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedProject(null)} className="fixed inset-0 bg-black/95 cursor-zoom-out" />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-[#0d0f12] border border-white/10 rounded-[2rem] w-full max-w-7xl flex flex-col md:flex-row h-[90vh] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)]">
               <div className={cn("flex-1 p-16 relative", acceptedData[selectedProject.id] ? "overflow-y-auto custom-scrollbar" : "overflow-hidden")}>
-                <div className="flex justify-between items-start mb-12 relative z-[75]"><div><div className="flex items-center gap-3 mb-3"><span className="text-architectural-yellow font-mono text-base bg-architectural-yellow/10 px-3 py-1 rounded-full font-bold">{selectedProject.plateNumber}</span><DifficultyBadge level={selectedProject.difficulty} /><span className="flex items-center gap-1 text-architectural-yellow font-mono text-sm bg-architectural-yellow/10 px-3 py-1 rounded-full font-black"><Icons.Star size={11} fill="currentColor" />{(selectedProject as any).points} pts</span></div><h2 className="text-6xl font-black tracking-tighter text-white uppercase">{selectedProject.title}</h2></div></div>
+                <div className="flex justify-between items-start mb-12 relative z-[75]"><div><div className="flex items-center gap-3 mb-3"><span className="text-architectural-yellow font-mono text-base bg-architectural-yellow/10 px-3 py-1 rounded-full font-bold">{selectedProject.plateNumber}</span><DifficultyBadge level={selectedProject.difficulty} /><span className="flex items-center gap-1 text-architectural-yellow font-mono text-sm bg-architectural-yellow/10 px-3 py-1 rounded-full font-black"><Icons.Star size={11} fill="currentColor" />{(selectedProject as any).points} pts</span><span className="flex items-center gap-1 text-blue-400 font-mono text-sm bg-blue-400/10 px-3 py-1 rounded-full font-black"><Icons.Zap size={11} />{(selectedProject as any).xp} xp</span></div><h2 className="text-6xl font-black tracking-tighter text-white uppercase">{selectedProject.title}</h2></div></div>
 
                 {!acceptedData[selectedProject.id] && (
                   <div className="absolute inset-0 top-[200px] bg-[#0d0f12]/98 z-[70] flex flex-col items-center justify-start text-center p-20 border-t border-white/5 pt-48">
