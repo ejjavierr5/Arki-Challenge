@@ -35,6 +35,7 @@ export type Project = {
   roomProgram: RoomProgram[];
   inspirations: { name: string; architect: string; why: string }[];
   points: number;
+  xp: number;
 };
 
 export const projects: Project[] = [
@@ -98,6 +99,7 @@ export const projects: Project[] = [
       { name: "Casa Wabi", architect: "Tadao Ando", why: "Concrete simplicity in a tropical coastal setting" },
     ],
     points: 100,
+    xp: 15,
   },
   {
     id: 'proj-002',
@@ -158,6 +160,7 @@ export const projects: Project[] = [
       { name: "Kampung Admiralty", architect: "WOHA Architects", why: "Mixed-use urban housing with shared sky gardens" },
     ],
     points: 150,
+    xp: 20,
   },
   {
     id: 'proj-003',
@@ -223,6 +226,7 @@ export const projects: Project[] = [
       { name: "CCTV Headquarters", architect: "Rem Koolhaas (OMA)", why: "The loop as a structural and programmatic innovation" },
     ],
     points: 300,
+    xp: 35,
   },
   {
     id: 'proj-004',
@@ -287,6 +291,7 @@ export const projects: Project[] = [
       { name: "Smithsonian National Museum of the American Indian", architect: "Douglas Cardinal", why: "Earth tones and organic forms rooted in indigenous identity" },
     ],
     points: 350,
+    xp: 40,
   },
   {
     id: 'proj-005',
@@ -351,6 +356,7 @@ export const projects: Project[] = [
       { name: "Batak Rural Health Clinic", architect: "WOHA Architects", why: "Climate-responsive tropical health facility with natural ventilation" },
     ],
     points: 75,
+    xp: 10,
   },
   {
     id: 'proj-006',
@@ -417,6 +423,7 @@ export const projects: Project[] = [
       { name: "Zeitz MOCAA", architect: "Heatherwick Studio", why: "Grain silo cells carved to create an extraordinary interior" },
     ],
     points: 600,
+    xp: 60,
   },
   {
     id: 'proj-007',
@@ -485,6 +492,7 @@ export const projects: Project[] = [
       { name: "Helen & Hard School", architect: "Helen & Hard", why: "Timber structure that celebrates natural materials for children" },
     ],
     points: 400,
+    xp: 45,
   },
   {
     id: 'proj-008',
@@ -553,6 +561,7 @@ export const projects: Project[] = [
       { name: "Port of Singapore Tuas", architect: "JTC Corporation", why: "Future-ready automated terminal design principles" },
     ],
     points: 650,
+    xp: 65,
   },
   {
     id: 'proj-009',
@@ -624,6 +633,7 @@ export const projects: Project[] = [
       { name: "The Shard", architect: "Renzo Piano", why: "Mixed-use vertical city with retail, office, hotel, and residences" },
     ],
     points: 900,
+    xp: 90,
   },
   {
     id: 'proj-010',
@@ -699,6 +709,7 @@ export const projects: Project[] = [
       { name: "Six Senses Yao Noi", architect: "COMO Hotels", why: "Vernacular forms elevated to luxury without abandoning context" },
     ],
     points: 950,
+    xp: 95,
   },
 
   // ─── PLATES 11–40 ────────────────────────────────────────────────────────────
@@ -743,6 +754,7 @@ export const projects: Project[] = [
       { name: "Keret House", architect: "Jakub Szczesny", why: "The world's narrowest house proves small is not undignified" },
     ],
     points: 125,
+    xp: 12,
   },
   {
     id: 'proj-012',
@@ -791,6 +803,7 @@ export const projects: Project[] = [
       { name: "West Vancouver Fire Hall", architect: "Hughes Condon Marler", why: "Glass apparatus bay as transparent civic gesture" },
     ],
     points: 450,
+    xp: 50,
   },
   {
     id: 'proj-013',
@@ -837,6 +850,7 @@ export const projects: Project[] = [
       { name: "Panyaden Restaurant", architect: "Chiangmai Life Architects", why: "Open tropical dining pavilion using natural materials" },
     ],
     points: 700,
+    xp: 70,
   },
   {
     id: 'proj-014',
@@ -887,6 +901,7 @@ export const projects: Project[] = [
       { name: "Ponds at Hever Castle", architect: "William Waldorf Astor", why: "Water as landscape — the original aquatic design brief" },
     ],
     points: 1000,
+    xp: 100,
   },
   {
     id: 'proj-015',
@@ -935,6 +950,7 @@ export const projects: Project[] = [
       { name: "Mercado Central Valencia", architect: "Alejandro Soler March", why: "Market hall as civic architecture with a dome of light" },
     ],
     points: 250,
+    xp: 30,
   },
   {
     id: 'proj-016',
@@ -976,6 +992,7 @@ export const projects: Project[] = [
       { name: "Yellow Treehouse Restaurant", architect: "Pacific Environments", why: "Pod structure elevated 10m in a redwood — structure as wonder" },
     ],
     points: 50,
+    xp: 10,
   },
   {
     id: 'proj-017',
@@ -1022,6 +1039,7 @@ export const projects: Project[] = [
       { name: "Solar Roadside Rest Area", architect: "Bjarke Ingels Group", why: "Rest stop integrated with renewable energy infrastructure" },
     ],
     points: 375,
+    xp: 38,
   },
   {
     id: 'proj-018',
@@ -1066,6 +1084,7 @@ export const projects: Project[] = [
       { name: "Church of the Light", architect: "Tadao Ando", why: "Two slits of light in concrete — absolute reduction" },
     ],
     points: 750,
+    xp: 75,
   },
   {
     id: 'proj-019',
@@ -1113,6 +1132,7 @@ export const projects: Project[] = [
       { name: "Plantagon Vertical Farm", architect: "Sweco", why: "Spherical greenhouse tower as a model for urban food production" },
     ],
     points: 875,
+    xp: 85,
   },
   {
     id: 'proj-020',
@@ -1159,6 +1179,7 @@ export const projects: Project[] = [
       { name: "Kampung Admiralty", architect: "WOHA Architects", why: "Social housing elevated into a community landmark" },
     ],
     points: 325,
+    xp: 32,
   },
   {
     id: 'proj-021',
@@ -1204,6 +1225,7 @@ export const projects: Project[] = [
       { name: "Wozoco Apartments", architect: "MVRDV", why: "Cantilevered units as structural expression in a constrained site" },
     ],
     points: 475,
+    xp: 48,
   },
   {
     id: 'proj-022',
@@ -1254,6 +1276,7 @@ export const projects: Project[] = [
       { name: "Canadian Embassy Washington", architect: "Arthur Erickson", why: "The colonnade as a civic gesture in a capital city" },
     ],
     points: 575,
+    xp: 58,
   },
   {
     id: 'proj-023',
@@ -1298,6 +1321,7 @@ export const projects: Project[] = [
       { name: "Silo Cape Town", architect: "Heatherwick Studio", why: "Grain silo reimagined as destination architecture" },
     ],
     points: 200,
+    xp: 25,
   },
   {
     id: 'proj-024',
@@ -1345,6 +1369,7 @@ export const projects: Project[] = [
       { name: "Longitude 131 Uluru", architect: "Philip Cox", why: "Luxury eco-lodge that honors the sacred landscape it inhabits" },
     ],
     points: 625,
+    xp: 62,
   },
   {
     id: 'proj-025',
@@ -1391,6 +1416,7 @@ export const projects: Project[] = [
       { name: "Bodegas Ysios", architect: "Santiago Calatrava", why: "The undulating aluminum roof as a rioja landscape" },
     ],
     points: 675,
+    xp: 68,
   },
   {
     id: 'proj-026',
@@ -1440,6 +1466,7 @@ export const projects: Project[] = [
       { name: "Stuttgart City Library", architect: "Eun Young Yi", why: "The inverted ziggurat as a pure interior landscape of books" },
     ],
     points: 280,
+    xp: 28,
   },
   {
     id: 'proj-027',
@@ -1488,6 +1515,7 @@ export const projects: Project[] = [
       { name: "Singapore Civil Defence HQ", architect: "CPG Consultants", why: "Emergency operations integrated with public civic presence" },
     ],
     points: 850,
+    xp: 80,
   },
   {
     id: 'proj-028',
@@ -1532,6 +1560,7 @@ export const projects: Project[] = [
       { name: "The Pod Hotel NYC", architect: "Stonehill Taylor", why: "Budget accommodation elevated by thoughtful compact design" },
     ],
     points: 80,
+    xp: 10,
   },
   {
     id: 'proj-029',
@@ -1582,6 +1611,7 @@ export const projects: Project[] = [
       { name: "Googleplex", architect: "Clive Wilkinson Architects", why: "Campus urbanism that blurs work, play, and community" },
     ],
     points: 975,
+    xp: 98,
   },
   {
     id: 'proj-030',
@@ -1629,6 +1659,7 @@ export const projects: Project[] = [
       { name: "Arup Acoustics Concert Shell", architect: "Arup", why: "Portable concert shell designed for acoustic perfection" },
     ],
     points: 425,
+    xp: 42,
   },
   {
     id: 'proj-031',
@@ -1676,6 +1707,7 @@ export const projects: Project[] = [
       { name: "Parkland Hospital Dallas", architect: "HDR Architecture", why: "Patient-centered design principles at large hospital scale" },
     ],
     points: 310,
+    xp: 33,
   },
   {
     id: 'proj-032',
@@ -1722,6 +1754,7 @@ export const projects: Project[] = [
       { name: "Burnside Skatepark Portland", architect: "Skaters / DIY", why: "The most important skatepark ever built — by skaters, not architects" },
     ],
     points: 175,
+    xp: 18,
   },
   {
     id: 'proj-033',
@@ -1770,6 +1803,7 @@ export const projects: Project[] = [
       { name: "Apple Data Center Maiden NC", architect: "Apple / AECOM", why: "100% renewable energy data center campus" },
     ],
     points: 925,
+    xp: 92,
   },
   {
     id: 'proj-034',
@@ -1815,6 +1849,7 @@ export const projects: Project[] = [
       { name: "Cooper Union Student Housing", architect: "Morphosis", why: "Affordable student housing as rigorous architecture" },
     ],
     points: 60,
+    xp: 10,
   },
   {
     id: 'proj-035',
@@ -1861,6 +1896,7 @@ export const projects: Project[] = [
       { name: "Parc des Oiseaux Villars", architect: "Various", why: "Bird sanctuary infrastructure that becomes public architecture" },
     ],
     points: 760,
+    xp: 72,
   },
   {
     id: 'proj-036',
@@ -1907,6 +1943,7 @@ export const projects: Project[] = [
       { name: "Aga Khan Mausoleum Aswan", architect: "Mausoleum Design", why: "Simple mass on a hillside — dignity through restraint" },
     ],
     points: 360,
+    xp: 36,
   },
   {
     id: 'proj-037',
@@ -1955,6 +1992,7 @@ export const projects: Project[] = [
       { name: "Six Senses Con Dao", architect: "Six Senses Design Team", why: "Eco-resort integrated into an island with zero visual impact" },
     ],
     points: 680,
+    xp: 66,
   },
   {
     id: 'proj-038',
@@ -2006,6 +2044,7 @@ export const projects: Project[] = [
       { name: "CERN Globe Geneva", architect: "Thomas Buchi", why: "Timber grid sphere as a symbol of scientific wonder" },
     ],
     points: 980,
+    xp: 96,
   },
   {
     id: 'proj-039',
@@ -2051,6 +2090,7 @@ export const projects: Project[] = [
       { name: "COOP Gas Station Valtakunnan", architect: "Lahdelma & Mahlamaki", why: "Service station elevated to civic architecture through material honesty" },
     ],
     points: 140,
+    xp: 14,
   },
   {
     id: 'proj-040',
@@ -2100,5 +2140,6 @@ export const projects: Project[] = [
       { name: "Superkilen Copenhagen", architect: "BIG + Superflex + Topotek1", why: "Urban park as global collection — 60 objects from 60 countries" },
     ],
     points: 1000,
+    xp: 100,
   },
 ];

@@ -522,6 +522,12 @@ export default function App() {
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, Record<string, any>>>(() => {
     try { return JSON.parse(localStorage.getItem('arch_uploadedFiles') || '{}'); } catch { return {}; }
   });
+  const [profileData, setProfileData] = useState<{ name: string; title: string; school: string; firm: string; bio: string; avatarUrl: string }>(() => {
+    try { return JSON.parse(localStorage.getItem('arch_profile') || 'null') || { name: '', title: 'Student Architect', school: '', firm: '', bio: '', avatarUrl: '' }; } catch { return { name: '', title: 'Student Architect', school: '', firm: '', bio: '', avatarUrl: '' }; }
+  });
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileDraft, setProfileDraft] = useState(profileData);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [globalTime, setGlobalTime] = useState(Date.now());
   const [filter, setFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
@@ -551,6 +557,17 @@ export default function App() {
   // Hidden file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentUploadTarget = useRef<string | null>(null);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target?.result as string;
+      setProfileDraft(prev => ({ ...prev, avatarUrl: url }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const ARCH_QUOTES = [
     "Architecture is the learned game, correct and magnificent, of forms assembled in the light.",
@@ -584,6 +601,33 @@ export default function App() {
   useEffect(() => { localStorage.setItem('arch_submittedIds', JSON.stringify(submittedIds)); }, [submittedIds]);
   useEffect(() => { localStorage.setItem('arch_uploadedFiles', JSON.stringify(uploadedFiles)); }, [uploadedFiles]);
   useEffect(() => { localStorage.setItem('arch_challenge', JSON.stringify(challengeAccepted)); }, [challengeAccepted]);
+  useEffect(() => { localStorage.setItem('arch_profile', JSON.stringify(profileData)); }, [profileData]);
+
+  // XP & Level calculations
+  const totalXP = useMemo(() => {
+    return projects
+      .filter(p => submittedIds.includes(p.id))
+      .reduce((acc, p) => acc + ((p as any).xp || 0), 0);
+  }, [submittedIds]);
+
+  const getLevelInfo = (xp: number) => {
+    const levels = [
+      { level: 1, title: 'Drafting Apprentice', minXP: 0, maxXP: 50 },
+      { level: 2, title: 'Junior Technician', minXP: 50, maxXP: 150 },
+      { level: 3, title: 'Design Associate', minXP: 150, maxXP: 300 },
+      { level: 4, title: 'Project Architect', minXP: 300, maxXP: 500 },
+      { level: 5, title: 'Senior Designer', minXP: 500, maxXP: 750 },
+      { level: 6, title: 'Studio Lead', minXP: 750, maxXP: 1050 },
+      { level: 7, title: 'Principal Architect', minXP: 1050, maxXP: 1400 },
+      { level: 8, title: 'Design Director', minXP: 1400, maxXP: 1800 },
+      { level: 9, title: 'Master Builder', minXP: 1800, maxXP: 2300 },
+      { level: 10, title: 'Legendary Architect', minXP: 2300, maxXP: 9999 },
+    ];
+    const current = levels.findLast(l => xp >= l.minXP) || levels[0];
+    const next = levels.find(l => l.level === current.level + 1);
+    const progress = next ? Math.min(100, Math.round(((xp - current.minXP) / (next.minXP - current.minXP)) * 100)) : 100;
+    return { ...current, progress, nextXP: next?.minXP || current.maxXP, xpInLevel: xp - current.minXP, xpNeeded: next ? next.minXP - current.minXP : 0 };
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setGlobalTime(Date.now()), 1000);
@@ -822,6 +866,8 @@ export default function App() {
       />
       {/* Hidden challenge file input */}
       <input ref={challengeFileInputRef} type="file" className="hidden" multiple onChange={handleChallengeFileUpload} />
+      {/* Hidden avatar input */}
+      <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
 
       <aside className="w-64 border-r border-white/10 bg-black/40 backdrop-blur-2xl fixed h-full z-[60] flex flex-col p-6 shadow-2xl">
         <div className="flex items-center gap-3 mb-12">
@@ -1118,53 +1164,163 @@ export default function App() {
               );
             })()}
           </motion.section>
-        ) : currentView === 'profile' ? (
-          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-16">
-            <header className="flex items-center gap-8">
-              <div className="w-32 h-32 rounded-[2rem] bg-architectural-yellow text-black flex items-center justify-center font-bold text-xl shadow-[0_20px_50px_rgba(244,180,0,0.2)]">R</div>
-              <div>
-                <h1 className="text-5xl font-black uppercase tracking-tighter text-white">Senior Architect</h1>
-                <p className="text-gray-500 font-mono text-sm uppercase tracking-[0.3em] mt-2">Firm Rank: Master Technician</p>
-                <div className="flex gap-4 mt-6">
-                  <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-full flex items-center gap-2 text-[10px] font-mono uppercase font-bold"><Icons.Trophy size={14} className="text-architectural-yellow" /> 4.0 Studio GPA</div>
-                  <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-full flex items-center gap-2 text-[10px] font-mono uppercase font-bold"><Icons.Target size={14} className="text-blue-400" /> {submittedIds.length} Commissions</div>
+        ) : currentView === 'profile' ? (() => {
+          const levelInfo = getLevelInfo(totalXP);
+          const totalPoints = projects.filter(p => submittedIds.includes(p.id)).reduce((acc, p) => acc + ((p as any).points || 0), 0);
+          return (
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
+
+            {/* PROFILE HEADER */}
+            <div className="p-10 bg-white/[0.02] border border-white/10 rounded-[2rem] flex items-start gap-8 relative">
+              {!editingProfile && (
+                <button onClick={() => { setProfileDraft(profileData); setEditingProfile(true); }} className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-mono uppercase font-black text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                  <Icons.PencilLine size={12} /> Edit Profile
+                </button>
+              )}
+
+              {/* Avatar */}
+              <div className="relative shrink-0">
+                <div className="w-28 h-28 rounded-[1.5rem] overflow-hidden border-2 border-white/10 shadow-2xl bg-architectural-yellow flex items-center justify-center">
+                  {profileData.avatarUrl ? (
+                    <img src={profileData.avatarUrl} className="w-full h-full object-cover" alt="avatar" />
+                  ) : (
+                    <span className="text-black font-black text-3xl">{profileData.name ? profileData.name[0].toUpperCase() : 'A'}</span>
+                  )}
+                </div>
+                {editingProfile && (
+                  <button onClick={() => avatarInputRef.current?.click()} className="absolute -bottom-2 -right-2 p-2 bg-architectural-yellow text-black rounded-xl shadow-lg hover:brightness-110 transition-all">
+                    <Icons.Camera size={12} />
+                  </button>
+                )}
+              </div>
+
+              {/* Info */}
+              {editingProfile ? (
+                <div className="flex-1 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1">Full Name</label>
+                      <input value={profileDraft.name} onChange={e => setProfileDraft(p => ({ ...p, name: e.target.value }))} placeholder="Your name" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1">Title / Role</label>
+                      <input value={profileDraft.title} onChange={e => setProfileDraft(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Student Architect" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1 flex items-center gap-1"><Icons.GraduationCap size={9} /> School / University</label>
+                      <input value={profileDraft.school} onChange={e => setProfileDraft(p => ({ ...p, school: e.target.value }))} placeholder="e.g. University of Santo Tomas" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1 flex items-center gap-1"><Icons.Building2 size={9} /> Architectural Firm</label>
+                      <input value={profileDraft.firm} onChange={e => setProfileDraft(p => ({ ...p, firm: e.target.value }))} placeholder="e.g. Juan dela Cruz Architects" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1">Bio</label>
+                    <textarea value={profileDraft.bio} onChange={e => setProfileDraft(p => ({ ...p, bio: e.target.value }))} placeholder="Tell us about yourself..." rows={2} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none resize-none transition-all" />
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => { setProfileData(profileDraft); setEditingProfile(false); }} className="px-6 py-2.5 bg-architectural-yellow text-black font-black rounded-xl text-xs font-mono uppercase hover:brightness-110 transition-all">Save Profile</button>
+                    <button onClick={() => setEditingProfile(false)} className="px-6 py-2.5 bg-white/5 border border-white/10 text-gray-400 font-black rounded-xl text-xs font-mono uppercase hover:bg-white/10 transition-all">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1">
+                  <h1 className="text-4xl font-black uppercase tracking-tighter text-white">{profileData.name || 'Unnamed Architect'}</h1>
+                  <p className="text-architectural-yellow font-mono text-sm uppercase tracking-widest mt-1 font-bold">{profileData.title}</p>
+                  {profileData.bio && <p className="text-gray-400 text-sm mt-3 leading-relaxed max-w-xl">{profileData.bio}</p>}
+                  <div className="flex flex-wrap gap-3 mt-4">
+                    {profileData.school && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-mono text-blue-400 font-black"><Icons.GraduationCap size={11} />{profileData.school}</span>}
+                    {profileData.firm && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-[10px] font-mono text-purple-400 font-black"><Icons.Building2 size={11} />{profileData.firm}</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* XP LEVEL BAR */}
+            <div className="p-8 bg-white/[0.02] border border-white/10 rounded-[2rem] space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="text-2xl font-black text-architectural-yellow">Level {levelInfo.level}</span>
+                    <span className="text-sm font-mono text-gray-400 uppercase font-black tracking-widest">{levelInfo.title}</span>
+                  </div>
+                  <p className="text-[10px] font-mono text-gray-600 uppercase">{totalXP} XP total · {levelInfo.xpInLevel} / {levelInfo.xpNeeded || '∞'} XP this level</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] font-mono text-gray-600 uppercase mb-1">{levelInfo.level < 10 ? `Next: ${levelInfo.title.split(' ').slice(-1)[0] === getLevelInfo(levelInfo.nextXP).title.split(' ').slice(-1)[0] ? 'Max Level' : getLevelInfo(levelInfo.nextXP).title}` : 'MAX LEVEL'}</p>
+                  <p className="text-xs font-mono text-gray-500">{levelInfo.level < 10 ? `${levelInfo.nextXP - totalXP} XP to go` : 'Legendary'}</p>
                 </div>
               </div>
-            </header>
-
-            <div className="grid grid-cols-3 gap-8">
-              <div className="p-8 bg-white/[0.02] border border-white/10 rounded-[2rem]">
-                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-4">Firm Lodgments</span>
-                <span className="text-5xl font-bold text-white">{submittedIds.length}<span className="text-gray-700 text-2xl"> / {projects.length}</span></span>
+              <div className="relative h-4 bg-white/5 rounded-full overflow-hidden shadow-inner">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${levelInfo.progress}%` }}
+                  transition={{ duration: 1.2, ease: 'easeOut' }}
+                  className="h-full rounded-full bg-gradient-to-r from-architectural-yellow via-yellow-400 to-amber-300 shadow-[0_0_12px_rgba(244,180,0,0.5)]"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-[9px] font-black font-mono text-black/70 uppercase tracking-widest drop-shadow">{levelInfo.progress}%</span>
+                </div>
               </div>
-              <div className="p-8 bg-white/[0.02] border border-white/10 rounded-[2rem]">
-                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-4">Production Cycles</span>
-                <span className="text-5xl font-bold text-white">{Object.keys(acceptedData).length}</span>
-              </div>
-              <div className="p-8 bg-white/[0.02] border border-white/10 rounded-[2rem]">
-                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-4">Technical Files</span>
-                <span className="text-5xl font-bold text-white">{Object.values(uploadedFiles).reduce((acc, curr) => acc + Object.keys(curr).length, 0)}</span>
+              {/* Level milestones */}
+              <div className="flex justify-between text-[8px] font-mono text-gray-700 uppercase font-black px-1">
+                {['1','2','3','4','5','6','7','8','9','10'].map(l => (
+                  <span key={l} className={parseInt(l) <= levelInfo.level ? 'text-architectural-yellow' : ''}>{l}</span>
+                ))}
               </div>
             </div>
 
+            {/* STATS GRID */}
+            <div className="grid grid-cols-4 gap-6">
+              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center">
+                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Total XP</span>
+                <span className="text-3xl font-black text-architectural-yellow">{totalXP}</span>
+              </div>
+              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center">
+                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Points Earned</span>
+                <span className="text-3xl font-black text-white">{totalPoints.toLocaleString()}</span>
+              </div>
+              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center">
+                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Lodgments</span>
+                <span className="text-3xl font-black text-white">{submittedIds.length}<span className="text-gray-700 text-xl"> / {projects.length}</span></span>
+              </div>
+              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center">
+                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Active</span>
+                <span className="text-3xl font-black text-blue-400">{Object.keys(acceptedData).filter(id => !submittedIds.includes(id)).length}</span>
+              </div>
+            </div>
+
+            {/* COMPLETED SETS */}
             <section>
-              <h2 className="text-xs font-mono uppercase font-black tracking-[0.4em] text-gray-600 mb-8 border-b border-white/5 pb-4">Completed Technical Sets</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <h2 className="text-xs font-mono uppercase font-black tracking-[0.4em] text-gray-600 mb-6 border-b border-white/5 pb-4">Completed Technical Sets</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {projects.filter(p => submittedIds.includes(p.id)).map(p => (
-                  <div key={`lodged-${p.id}`} className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-[2rem] flex flex-col gap-4">
-                    <div><span className="font-mono text-[9px] text-emerald-400 uppercase font-black">Success: {p.plateNumber}</span><h4 className="font-bold text-lg text-white mt-1">{p.title}</h4></div>
+                  <div key={`lodged-${p.id}`} className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-[2rem] flex flex-col gap-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="font-mono text-[9px] text-emerald-400 uppercase font-black">{p.plateNumber}</span>
+                        <h4 className="font-bold text-base text-white mt-0.5">{p.title}</h4>
+                      </div>
+                      <div className="text-right shrink-0 ml-3">
+                        <p className="text-architectural-yellow font-black text-sm flex items-center gap-1 justify-end"><Icons.Star size={10} fill="currentColor" />{(p as any).points}</p>
+                        <p className="text-[9px] font-mono text-gray-500">+{(p as any).xp} XP</p>
+                      </div>
+                    </div>
                     <div className="flex flex-wrap gap-1.5">{p.software.slice(0, 3).map(s => <SoftwareBadge key={s} s={s} />)}</div>
                   </div>
                 ))}
                 {submittedIds.length === 0 && (
                   <div className="col-span-3 py-20 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-[3rem]">
                     <Icons.Inbox size={48} className="mx-auto text-gray-800 mb-4" />
-                    <p className="text-gray-600 font-mono text-[10px] uppercase font-black">No technical sets lodged in current term</p>
+                    <p className="text-gray-600 font-mono text-[10px] uppercase font-black">No technical sets lodged — complete a project to earn XP</p>
                   </div>
                 )}
               </div>
             </section>
           </motion.section>
+          );
+        })()
         ) : null}
       </main>
 
