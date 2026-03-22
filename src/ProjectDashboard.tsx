@@ -3,7 +3,7 @@ import * as Icons from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { UserButton, useUser } from '@clerk/react';
+import { useUser, SignOutButton } from '@clerk/react';
 import { projects } from './data';
 import type { Project, DifficultyLevel } from './data';
 
@@ -923,20 +923,20 @@ export default function App() {
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
 
       <aside className="w-64 border-r border-white/10 bg-black/40 backdrop-blur-2xl fixed h-full z-[60] flex flex-col p-6 shadow-2xl">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-architectural-yellow text-black flex items-center justify-center font-bold text-xl rounded-xl shadow-lg">A</div>
-          <div className="font-mono text-[10px] font-bold uppercase tracking-widest leading-tight text-white">Arki<br />Challenge</div>
-        </div>
+        <a href="/" className="flex items-center gap-3 mb-6 group">
+          <div className="w-10 h-10 bg-architectural-yellow text-black flex items-center justify-center font-bold text-xl rounded-xl shadow-lg group-hover:scale-105 transition-transform">A</div>
+          <div className="font-mono text-[10px] font-bold uppercase tracking-widest leading-tight text-white group-hover:text-architectural-yellow transition-colors">Arki<br />Challenge</div>
+        </a>
         
         {/* User Profile Section */}
         <div className="flex items-center gap-3 mb-8 p-3 bg-white/5 rounded-xl border border-white/5">
-          <UserButton 
-            appearance={{
-              elements: {
-                avatarBox: 'w-9 h-9',
-              }
-            }}
-          />
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-architectural-yellow/20 flex items-center justify-center">
+            {user?.imageUrl ? (
+              <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <Icons.User size={18} className="text-architectural-yellow" />
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-white truncate">{user?.firstName || 'Architect'}</p>
             <p className="text-[9px] font-mono text-gray-500 truncate">{user?.primaryEmailAddress?.emailAddress || ''}</p>
@@ -944,7 +944,6 @@ export default function App() {
         </div>
 
         <nav className="flex-1 space-y-1.5 overflow-y-auto pr-2 custom-scrollbar">
-          <a href="/" className="w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]"><Icons.Home size={16} /> Home</a>
           <button onClick={() => setCurrentView('dashboard')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'dashboard' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.Activity size={16} /> Dashboard</button>
           <button onClick={() => setCurrentView('calendar')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'calendar' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.Calendar size={16} /> Calendar</button>
           <button onClick={() => setCurrentView('gantt')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'gantt' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.GanttChart size={16} /> Gantt Chart</button>
@@ -1015,9 +1014,16 @@ export default function App() {
             )}
           </div>
         </nav>
-        <button onClick={handleAuth} className="mt-8 py-3 border border-white/10 rounded-lg font-mono text-[10px] uppercase hover:bg-architectural-yellow hover:text-black transition-all font-bold tracking-widest">
-          {accessToken ? '✓ DRIVE LINKED' : 'CONNECT DRIVE'}
-        </button>
+        <div className="mt-8 space-y-2">
+          <button onClick={handleAuth} className="w-full py-3 border border-white/10 rounded-lg font-mono text-[10px] uppercase hover:bg-architectural-yellow hover:text-black transition-all font-bold tracking-widest">
+            {accessToken ? '✓ DRIVE LINKED' : 'CONNECT DRIVE'}
+          </button>
+          <SignOutButton>
+            <button className="w-full py-3 border border-white/10 rounded-lg font-mono text-[10px] uppercase hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all font-bold tracking-widest text-gray-500 flex items-center justify-center gap-2">
+              <Icons.LogOut size={12} /> Sign Out
+            </button>
+          </SignOutButton>
+        </div>
       </aside>
 
       <main className="ml-64 mr-80 flex-1 p-12 overflow-y-auto h-screen relative z-10">
