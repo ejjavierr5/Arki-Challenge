@@ -3,6 +3,7 @@ import * as Icons from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useAuth, UserButton } from '@clerk/react';
 import { projects } from './data';
 
 function cn(...inputs: ClassValue[]) {
@@ -86,6 +87,7 @@ const CATEGORIES = [
 export default function Homepage() {
   const [currentDesign, setCurrentDesign] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { isSignedIn, isLoaded } = useAuth();
 
   // Auto-rotate featured designs
   useEffect(() => {
@@ -145,12 +147,38 @@ export default function Homepage() {
             </div>
 
             {/* CTA */}
-            <a
-              href="/dashboard"
-              className="px-6 py-3 bg-architectural-yellow text-black font-mono text-xs font-black uppercase tracking-wider rounded-xl hover:brightness-110 transition-all shadow-lg hover:shadow-architectural-yellow/20 flex items-center gap-2"
-            >
-              Launch Dashboard <Icons.ArrowRight size={14} />
-            </a>
+            {isLoaded && isSignedIn ? (
+              <div className="flex items-center gap-4">
+                <a
+                  href="/dashboard"
+                  className="px-6 py-3 bg-architectural-yellow text-black font-mono text-xs font-black uppercase tracking-wider rounded-xl hover:brightness-110 transition-all shadow-lg hover:shadow-architectural-yellow/20 flex items-center gap-2"
+                >
+                  Dashboard <Icons.ArrowRight size={14} />
+                </a>
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: 'w-10 h-10 border-2 border-white/20 hover:border-architectural-yellow/50 transition-colors',
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <a
+                  href="/sign-in"
+                  className="px-5 py-2.5 text-gray-300 font-mono text-xs font-medium uppercase tracking-wider rounded-xl hover:text-white hover:bg-white/5 transition-all"
+                >
+                  Sign In
+                </a>
+                <a
+                  href="/sign-up"
+                  className="px-6 py-3 bg-architectural-yellow text-black font-mono text-xs font-black uppercase tracking-wider rounded-xl hover:brightness-110 transition-all shadow-lg hover:shadow-architectural-yellow/20 flex items-center gap-2"
+                >
+                  Get Started <Icons.ArrowRight size={14} />
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </motion.nav>
@@ -190,12 +218,21 @@ export default function Homepage() {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4">
-              <a
-                href="/dashboard"
-                className="px-8 py-4 bg-architectural-yellow text-black font-mono text-sm font-black uppercase tracking-wider rounded-2xl hover:brightness-110 transition-all shadow-lg hover:shadow-architectural-yellow/30 flex items-center gap-3"
-              >
-                <Icons.Compass size={18} /> Start Designing
-              </a>
+              {isLoaded && isSignedIn ? (
+                <a
+                  href="/dashboard"
+                  className="px-8 py-4 bg-architectural-yellow text-black font-mono text-sm font-black uppercase tracking-wider rounded-2xl hover:brightness-110 transition-all shadow-lg hover:shadow-architectural-yellow/30 flex items-center gap-3"
+                >
+                  <Icons.Compass size={18} /> Go to Dashboard
+                </a>
+              ) : (
+                <a
+                  href="/sign-up"
+                  className="px-8 py-4 bg-architectural-yellow text-black font-mono text-sm font-black uppercase tracking-wider rounded-2xl hover:brightness-110 transition-all shadow-lg hover:shadow-architectural-yellow/30 flex items-center gap-3"
+                >
+                  <Icons.Compass size={18} /> Start Designing
+                </a>
+              )}
               <a
                 href="#features"
                 className="px-8 py-4 bg-white/5 border border-white/10 text-white font-mono text-sm font-bold uppercase tracking-wider rounded-2xl hover:bg-white/10 transition-all flex items-center gap-3"
