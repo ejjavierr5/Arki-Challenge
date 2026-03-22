@@ -15,10 +15,36 @@ export const getFriends = query({
     }
 
     // Get friend relationships where user is the one who added friends
-    const friendships = await ctx.db
+    const friendshipsAsAdder = await ctx.db
       .query("friends")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
+
+    // Get friend relationships where user was added by others
+    const friendshipsAsAdded = await ctx.db
+      .query("friends")
+      .filter((q) => q.eq(q.field("friendUserId"), user._id))
+      .collect();
+
+    // Collect all unique friends
+    const friendUserIds = new Set<string>();
+    const friendshipMap = new Map<string, number>();
+
+    // Add friends that user added
+    for (const friendship of friendshipsAsAdder) {
+      const friendId = friendship.friendUserId.toString();
+      friendUserIds.add(friendId);
+      friendshipMap.set(friendId, friendship.addedAt);
+    }
+
+    // Add friends who added the user (use their addedAt time)
+    for (const friendship of friendshipsAsAdded) {
+      const friendId = friendship.userId.toString();
+      if (!friendUserIds.has(friendId)) {
+        friendUserIds.add(friendId);
+        friendshipMap.set(friendId, friendship.addedAt);
+      }
+    }
 
     // Get the actual friend user data
     const friendsData: Array<{
@@ -32,9 +58,12 @@ export const getFriends = query({
       addedAt: number;
     }> = [];
     
-    for (const friendship of friendships) {
-      const friend = await ctx.db.get(friendship.friendUserId);
-      if (friend) {
+    for (const friendUserId of friendUserIds) {
+      const friend = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("_id"), friendUserId))
+        .first();
+      if (friend && friend.friendCode) {
         friendsData.push({
           id: friend.friendCode,
           name: friend.name,
@@ -43,7 +72,7 @@ export const getFriends = query({
           firm: friend.firm || "",
           avatarUrl: friend.imageUrl || "",
           specialties: friend.specialties || [],
-          addedAt: friendship.addedAt,
+          addedAt: friendshipMap.get(friendUserId) || Date.now(),
         });
       }
     }
@@ -109,22 +138,38 @@ export const addFriend = mutation({
       throw new Error("Friend code not found");
     }
 
-    // Check if already friends
-    const existingFriendship = await ctx.db
+    // Check if already friends (check both directions)
+    const existingFriendship1 = await ctx.db
       .query("friends")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .filter((q) => q.eq(q.field("friendUserId"), friendUser._id))
       .first();
+    
+    const existingFriendship2 = await ctx.db
+      .query("friends")
+      .withIndex("by_user", (q) => q.eq("userId", friendUser._id))
+      .filter((q) => q.eq(q.field("friendUserId"), user._id))
+      .first();
 
-    if (existingFriendship) {
+    if (existingFriendship1 || existingFriendship2) {
       throw new Error("Already friends with this user");
     }
 
-    // Add the friendship
-    return await ctx.db.insert("friends", {
+    // Create bidirectional friendship records
+    const addedAt = Date.now();
+    
+    // User adds friend
+    await ctx.db.insert("friends", {
       userId: user._id,
       friendUserId: friendUser._id,
-      addedAt: Date.now(),
+      addedAt: addedAt,
+    });
+    
+    // Friend gets user as friend (reciprocal relationship)
+    return await ctx.db.insert("friends", {
+      userId: friendUser._id,
+      friendUserId: user._id,
+      addedAt: addedAt,
     });
   },
 });
@@ -155,15 +200,26 @@ export const removeFriend = mutation({
       throw new Error("Friend not found");
     }
 
-    // Find and delete the friendship
-    const friendship = await ctx.db
+    // Find and delete both directions of the friendship
+    const friendship1 = await ctx.db
       .query("friends")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .filter((q) => q.eq(q.field("friendUserId"), friendUser._id))
       .first();
 
-    if (friendship) {
-      await ctx.db.delete(friendship._id);
+    const friendship2 = await ctx.db
+      .query("friends")
+      .withIndex("by_user", (q) => q.eq("userId", friendUser._id))
+      .filter((q) => q.eq(q.field("friendUserId"), user._id))
+      .first();
+
+    // Delete both friendship records if they exist
+    if (friendship1) {
+      await ctx.db.delete(friendship1._id);
+    }
+    
+    if (friendship2) {
+      await ctx.db.delete(friendship2._id);
     }
   },
 });
