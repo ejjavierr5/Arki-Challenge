@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useUser, SignOutButton } from '@clerk/react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
 import { projects } from './data';
 import type { Project, DifficultyLevel } from './data';
 
@@ -515,15 +517,31 @@ export default function App() {
   const { user } = useUser();
   const [currentView, setCurrentView] = useState<'dashboard' | 'calendar' | 'gantt' | 'profile' | 'friends'>('dashboard');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [acceptedData, setAcceptedData] = useState<Record<string, number>>(() => {
-    try { return JSON.parse(localStorage.getItem('arch_acceptedData') || '{}'); } catch { return {}; }
-  });
-  const [submittedIds, setSubmittedIds] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('arch_submittedIds') || '[]'); } catch { return []; }
-  });
-  const [uploadedFiles, setUploadedFiles] = useState<Record<string, Record<string, any>>>(() => {
-    try { return JSON.parse(localStorage.getItem('arch_uploadedFiles') || '{}'); } catch { return {}; }
-  });
+  
+  // Convex queries
+  const convexUser = useQuery(api.users.getUser, user?.id ? { clerkId: user.id } : "skip");
+  const projectsData = useQuery(api.projects.getUserProjects, user?.id ? { clerkId: user.id } : "skip");
+  const journalData = useQuery(api.journal.getJournalEntries, user?.id ? { clerkId: user.id } : "skip");
+  const challengeData = useQuery(api.challenges.getChallengeProgress, user?.id ? { clerkId: user.id } : "skip");
+  
+  // Convex mutations
+  const acceptProjectMutation = useMutation(api.projects.acceptProject);
+  const discardProjectMutation = useMutation(api.projects.discardProject);
+  const submitProjectMutation = useMutation(api.projects.submitProject);
+  const uploadFileMutation = useMutation(api.projects.uploadFile);
+  const updateProfileMutation = useMutation(api.users.updateProfile);
+  const addJournalEntryMutation = useMutation(api.journal.addJournalEntry);
+  const deleteJournalEntryMutation = useMutation(api.journal.deleteJournalEntry);
+  const acceptChallengeMutation = useMutation(api.challenges.acceptChallenge);
+  const completeChallengeMutation = useMutation(api.challenges.completeChallenge);
+  const abandonChallengeMutation = useMutation(api.challenges.abandonChallenge);
+
+  // Derived state from Convex data
+  const acceptedData = useMemo(() => projectsData?.accepted || {}, [projectsData]);
+  const submittedIds = useMemo(() => projectsData?.submitted || [], [projectsData]);
+  const uploadedFiles = useMemo(() => projectsData?.uploadedFiles || {}, [projectsData]);
+  const journalEntries = useMemo(() => journalData || [], [journalData]);
+  const challengeAccepted = useMemo(() => challengeData || null, [challengeData]);
 
   type ProfileType = {
     name: string; title: string; school: string; firm: string; bio: string; avatarUrl: string;
@@ -531,33 +549,38 @@ export default function App() {
   };
   const defaultProfile: ProfileType = { name: '', title: 'Student Architect', school: '', firm: '', bio: '', avatarUrl: '', specialties: [], designPreferences: [] };
 
-  const [profileData, setProfileData] = useState<ProfileType>(() => {
-    try { return { ...defaultProfile, ...JSON.parse(localStorage.getItem('arch_profile') || 'null') }; } catch { return defaultProfile; }
-  });
+  // Profile data from Convex user
+  const profileData = useMemo<ProfileType>(() => {
+    if (convexUser) {
+      return {
+        name: convexUser.name || user?.fullName || '',
+        title: convexUser.title || 'Student Architect',
+        school: convexUser.school || '',
+        firm: convexUser.firm || '',
+        bio: convexUser.bio || '',
+        avatarUrl: convexUser.imageUrl || user?.imageUrl || '',
+        specialties: convexUser.specialties || [],
+        designPreferences: convexUser.designPreferences || [],
+      };
+    }
+    return {
+      ...defaultProfile,
+      name: user?.fullName || user?.firstName || '',
+      avatarUrl: user?.imageUrl || '',
+    };
+  }, [convexUser, user]);
+
   const [editingProfile, setEditingProfile] = useState(false);
-  const [profileDraft, setProfileDraft] = useState(profileData);
+  const [profileDraft, setProfileDraft] = useState<ProfileType>(defaultProfile);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync Clerk user data with profile on load
+  // Sync profile draft when profile data changes
   useEffect(() => {
-    if (user) {
-      setProfileData(prev => ({
-        ...prev,
-        name: prev.name || user.fullName || user.firstName || '',
-        avatarUrl: prev.avatarUrl || user.imageUrl || '',
-      }));
-      setProfileDraft(prev => ({
-        ...prev,
-        name: prev.name || user.fullName || user.firstName || '',
-        avatarUrl: prev.avatarUrl || user.imageUrl || '',
-      }));
-    }
-  }, [user]);
+    setProfileDraft(profileData);
+  }, [profileData]);
 
   type Friend = { id: string; name: string; title: string; school: string; firm: string; avatarUrl: string; specialties: string[]; addedAt: number };
-  const [friends, setFriends] = useState<Friend[]>(() => {
-    try { return JSON.parse(localStorage.getItem('arch_friends') || '[]'); } catch { return []; }
-  });
+  const [friends, setFriends] = useState<Friend[]>([]); // TODO: Connect to Convex when friends feature is fully implemented
   const [friendCode, setFriendCode] = useState('');
   const [friendCodeInput, setFriendCodeInput] = useState('');
   const [addFriendError, setAddFriendError] = useState('');
@@ -573,17 +596,11 @@ export default function App() {
   const [workDuration] = useState(25);
   const [breakDuration] = useState(5);
 
-  const [journalEntries, setJournalEntries] = useState<{id: string, text: string, time: number}[]>(() => {
-    try { return JSON.parse(localStorage.getItem('arch_journal') || '[]'); } catch { return []; }
-  });
   const [newEntry, setNewEntry] = useState('');
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [confirmDiscard, setConfirmDiscard] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState<string | null>(null);
-  const [challengeAccepted, setChallengeAccepted] = useState<{ title: string; acceptedAt: number; done: boolean; files?: { name: string; driveId: string }[] } | null>(() => {
-    try { return JSON.parse(localStorage.getItem('arch_challenge') || 'null'); } catch { return null; }
-  });
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [uploadingChallenge, setUploadingChallenge] = useState(false);
   const challengeFileInputRef = useRef<HTMLInputElement>(null);
@@ -630,13 +647,7 @@ export default function App() {
     return DAILY_CHALLENGES[dayOfYear % DAILY_CHALLENGES.length];
   }, []);
 
-  useEffect(() => { localStorage.setItem('arch_journal', JSON.stringify(journalEntries)); }, [journalEntries]);
-  useEffect(() => { localStorage.setItem('arch_acceptedData', JSON.stringify(acceptedData)); }, [acceptedData]);
-  useEffect(() => { localStorage.setItem('arch_submittedIds', JSON.stringify(submittedIds)); }, [submittedIds]);
-  useEffect(() => { localStorage.setItem('arch_uploadedFiles', JSON.stringify(uploadedFiles)); }, [uploadedFiles]);
-  useEffect(() => { localStorage.setItem('arch_challenge', JSON.stringify(challengeAccepted)); }, [challengeAccepted]);
-  useEffect(() => { localStorage.setItem('arch_profile', JSON.stringify(profileData)); }, [profileData]);
-  useEffect(() => { localStorage.setItem('arch_friends', JSON.stringify(friends)); }, [friends]);
+  // Data is now persisted in Convex, no localStorage sync needed
 
   // Generate a unique friend code based on profile name + random seed stored in localStorage
   useEffect(() => {
@@ -823,13 +834,16 @@ export default function App() {
 
       if (res.ok) {
         const driveFile = await res.json();
-        setUploadedFiles(prev => ({
-          ...prev,
-          [selectedProject.id]: {
-            ...(prev[selectedProject.id] || {}),
-            [fileName]: { name: file.name, driveId: driveFile.id, driveFile, folderId: projectFolderId },
-          },
-        }));
+        // Upload file info to Convex
+        if (user?.id) {
+          await uploadFileMutation({
+            clerkId: user.id,
+            projectId: selectedProject.id,
+            fileName: file.name,
+            fileType: fileName,
+            driveId: driveFile.id,
+          });
+        }
       } else {
         alert('Upload failed. Please try again.');
       }
@@ -842,9 +856,12 @@ export default function App() {
     }
   };
 
-  const addJournalEntry = () => {
-    if (!newEntry.trim()) return;
-    setJournalEntries(prev => [{ id: Date.now().toString(), text: newEntry, time: Date.now() }, ...prev]);
+  const addJournalEntry = async () => {
+    if (!newEntry.trim() || !user?.id) return;
+    await addJournalEntryMutation({
+      clerkId: user.id,
+      text: newEntry,
+    });
     setNewEntry('');
   };
 
@@ -874,10 +891,8 @@ export default function App() {
       });
       if (res.ok) {
         const driveFile = await res.json();
-        setChallengeAccepted(prev => prev ? {
-          ...prev,
-          files: [...(prev.files || []), { name: file.name, driveId: driveFile.id }],
-        } : null);
+        // TODO: Update challenge files - this needs to be handled when completing the challenge
+        console.log('Challenge file uploaded:', { name: file.name, driveId: driveFile.id });
       } else {
         alert('Upload failed. Please try again.');
       }
@@ -1355,7 +1370,20 @@ export default function App() {
                   </div>
 
                   <div className="flex gap-3">
-                    <button onClick={() => { setProfileData(profileDraft); setEditingProfile(false); }} className="px-6 py-2.5 bg-architectural-yellow text-black font-black rounded-xl text-xs font-mono uppercase hover:brightness-110 transition-all">Save Profile</button>
+                    <button onClick={async () => {
+                      if (user?.id) {
+                        await updateProfileMutation({
+                          clerkId: user.id,
+                          title: profileDraft.title,
+                          school: profileDraft.school,
+                          firm: profileDraft.firm,
+                          bio: profileDraft.bio,
+                          specialties: profileDraft.specialties,
+                          designPreferences: profileDraft.designPreferences,
+                        });
+                      }
+                      setEditingProfile(false);
+                    }} className="px-6 py-2.5 bg-architectural-yellow text-black font-black rounded-xl text-xs font-mono uppercase hover:brightness-110 transition-all">Save Profile</button>
                     <button onClick={() => setEditingProfile(false)} className="px-6 py-2.5 bg-white/5 border border-white/10 text-gray-400 font-black rounded-xl text-xs font-mono uppercase hover:bg-white/10 transition-all">Cancel</button>
                   </div>
                 </div>
@@ -1576,7 +1604,11 @@ export default function App() {
                   <Icons.CheckCircle size={14} className="text-emerald-400 shrink-0" />
                   <p className="text-[10px] font-mono text-emerald-400 font-black uppercase">Challenge Complete!</p>
                 </div>
-                <button onClick={() => setChallengeAccepted(null)} className="w-full py-2 border border-white/10 text-gray-600 font-black rounded-xl text-[9px] font-mono uppercase hover:text-white hover:bg-white/5 transition-all">
+                <button onClick={async () => {
+                  if (user?.id) {
+                    await abandonChallengeMutation({ clerkId: user.id });
+                  }
+                }} className="w-full py-2 border border-white/10 text-gray-600 font-black rounded-xl text-[9px] font-mono uppercase hover:text-white hover:bg-white/5 transition-all">
                   Clear
                 </button>
               </div>
@@ -1590,11 +1622,19 @@ export default function App() {
                   <button onClick={() => setShowChallengeModal(true)} className="flex-1 py-2 bg-white/5 border border-white/10 text-gray-300 font-black rounded-xl text-[9px] font-mono uppercase hover:bg-white/10 transition-all">
                     View Brief
                   </button>
-                  <button onClick={() => setChallengeAccepted(prev => prev ? { ...prev, done: true } : null)} className="flex-1 py-2 bg-emerald-600 text-white font-black rounded-xl text-[9px] font-mono uppercase hover:bg-emerald-500 transition-all">
+                  <button onClick={async () => {
+                    if (user?.id) {
+                      await completeChallengeMutation({ clerkId: user.id });
+                    }
+                  }} className="flex-1 py-2 bg-emerald-600 text-white font-black rounded-xl text-[9px] font-mono uppercase hover:bg-emerald-500 transition-all">
                     Mark Done
                   </button>
                 </div>
-                <button onClick={() => setChallengeAccepted(null)} className="w-full py-1.5 text-red-500/50 font-black rounded-xl text-[9px] font-mono uppercase hover:text-red-400 transition-all">
+                <button onClick={async () => {
+                  if (user?.id) {
+                    await abandonChallengeMutation({ clerkId: user.id });
+                  }
+                }} className="w-full py-1.5 text-red-500/50 font-black rounded-xl text-[9px] font-mono uppercase hover:text-red-400 transition-all">
                   Abandon
                 </button>
               </div>
@@ -1605,7 +1645,14 @@ export default function App() {
                 View Brief
               </button>
               <button
-                onClick={() => setChallengeAccepted({ title: dailyChallenge.title, acceptedAt: Date.now(), done: false })}
+                onClick={async () => {
+                  if (user?.id) {
+                    await acceptChallengeMutation({
+                      clerkId: user.id,
+                      challengeTitle: dailyChallenge.title,
+                    });
+                  }
+                }}
                 className="flex-1 py-2.5 bg-architectural-yellow text-black font-black rounded-xl text-[9px] font-mono uppercase hover:brightness-110 transition-all shadow-[0_0_20px_rgba(244,180,0,0.2)]"
               >
                 Accept
@@ -1634,7 +1681,14 @@ export default function App() {
                 <div className="mt-1.5 flex items-center justify-between">
                   <span className="text-[8px] text-gray-600 font-mono">{new Date(e.time).toLocaleDateString()}</span>
                   <button
-                    onClick={() => setJournalEntries(prev => prev.filter(j => j.id !== e.id))}
+                    onClick={async () => {
+                      if (user?.id) {
+                        await deleteJournalEntryMutation({
+                          clerkId: user.id,
+                          entryId: e.id as any, // e.id is the Convex document ID
+                        });
+                      }
+                    }}
                     className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 rounded-lg transition-all"
                     title="Delete entry"
                   >
@@ -1742,7 +1796,14 @@ export default function App() {
                 {!acceptedData[selectedProject.id] ? (
                   <div className="flex-1 flex flex-col justify-center text-center space-y-8">
                     <div className="p-10 bg-architectural-yellow/5 border border-architectural-yellow/10 rounded-[3rem] shadow-inner"><Icons.Compass size={64} className="mx-auto text-architectural-yellow mb-6" /><h5 className="text-2xl font-black uppercase tracking-tighter text-white">Start Production</h5><p className="text-sm text-gray-500 mt-4 leading-relaxed font-mono uppercase font-bold">Accepting this brief starts a {selectedProject.durationDays}-day production window.</p></div>
-                    <button onClick={() => { setAcceptedData(p => ({ ...p, [selectedProject.id]: Date.now() })); }} className="w-full py-6 bg-architectural-yellow text-black font-black rounded-[2rem] uppercase text-sm tracking-[0.3em] hover:scale-[1.02] transition-all shadow-[0_20px_50px_rgba(244,180,0,0.3)] pointer-events-auto">Start Project</button>
+                    <button onClick={async () => {
+                      if (user?.id && selectedProject) {
+                        await acceptProjectMutation({
+                          clerkId: user.id,
+                          projectId: selectedProject.id,
+                        });
+                      }
+                    }} className="w-full py-6 bg-architectural-yellow text-black font-black rounded-[2rem] uppercase text-sm tracking-[0.3em] hover:scale-[1.02] transition-all shadow-[0_20px_50px_rgba(244,180,0,0.3)] pointer-events-auto">Start Project</button>
                     <button onClick={() => setSelectedProject(null)} className="w-full py-4 border border-white/10 text-gray-500 font-black rounded-[2rem] uppercase text-xs tracking-[0.3em] hover:bg-white/5 hover:text-white transition-all pointer-events-auto">Cancel</button>
                   </div>
                 ) : !submittedIds.includes(selectedProject.id) ? (
@@ -1778,7 +1839,14 @@ export default function App() {
                     </div>
 
                     <div className="flex flex-col gap-3 shrink-0">
-                      <button onClick={() => { setSubmittedIds(p => [...p, selectedProject.id]); }} disabled={getProgress(selectedProject.id) < 100} className={cn("w-full py-6 font-black rounded-[2rem] uppercase text-sm tracking-[0.3em] shadow-2xl transition-all duration-500 pointer-events-auto", getProgress(selectedProject.id) === 100 ? "bg-emerald-600 text-white hover:bg-emerald-500" : "bg-white/5 text-gray-600 cursor-not-allowed shadow-none")}>Lodge Final Set</button>
+                      <button onClick={async () => {
+                        if (user?.id && selectedProject) {
+                          await submitProjectMutation({
+                            clerkId: user.id,
+                            projectId: selectedProject.id,
+                          });
+                        }
+                      }} disabled={getProgress(selectedProject.id) < 100} className={cn("w-full py-6 font-black rounded-[2rem] uppercase text-sm tracking-[0.3em] shadow-2xl transition-all duration-500 pointer-events-auto", getProgress(selectedProject.id) === 100 ? "bg-emerald-600 text-white hover:bg-emerald-500" : "bg-white/5 text-gray-600 cursor-not-allowed shadow-none")}>Lodge Final Set</button>
                       <button onClick={() => setSelectedProject(null)} className="w-full py-4 border border-white/10 text-gray-500 font-black rounded-[2rem] uppercase text-xs tracking-[0.3em] hover:bg-white/5 hover:text-white transition-all pointer-events-auto">Cancel</button>
 
                       {/* DISCARD */}
@@ -1787,10 +1855,13 @@ export default function App() {
                           <p className="text-xs font-mono text-red-400 uppercase font-black text-center tracking-widest">Terminate this project?</p>
                           <p className="text-[10px] font-mono text-gray-500 text-center">All progress and uploaded files will be removed. This cannot be undone.</p>
                           <div className="flex gap-2 mt-2">
-                            <button onClick={() => {
-                              setAcceptedData(p => { const n = { ...p }; delete n[selectedProject.id]; return n; });
-                              setUploadedFiles(p => { const n = { ...p }; delete n[selectedProject.id]; return n; });
-                              setSubmittedIds(p => p.filter(id => id !== selectedProject.id));
+                            <button onClick={async () => {
+                              if (user?.id && selectedProject) {
+                                await discardProjectMutation({
+                                  clerkId: user.id,
+                                  projectId: selectedProject.id,
+                                });
+                              }
                               setConfirmDiscard(null);
                               setSelectedProject(null);
                             }} className="flex-1 py-3 bg-red-500/20 border border-red-500/30 text-red-400 font-black rounded-xl text-xs font-mono uppercase hover:bg-red-500/30 transition-all pointer-events-auto">
@@ -1811,7 +1882,8 @@ export default function App() {
                 ) : (
                   <div className="flex-1 flex flex-col justify-center text-center space-y-6">
                     <div className="p-12 bg-emerald-500/5 border border-emerald-500/10 rounded-[3rem] shadow-inner"><Icons.CheckCircle size={80} className="mx-auto text-emerald-500 mb-6" /><h5 className="text-3xl font-black text-white uppercase tracking-tighter">Set Lodged</h5><p className="text-sm font-mono text-emerald-400 uppercase tracking-widest mt-2 font-black">Review In Progress</p></div>
-                    <button onClick={() => setSubmittedIds(prev => prev.filter(id => id !== selectedProject.id))} className="text-sm font-mono text-gray-600 uppercase hover:text-white transition-colors font-black pointer-events-auto">Retract Submission</button>
+                    {/* TODO: Implement retract project mutation */}
+                    {/* <button onClick={() => setSubmittedIds(prev => prev.filter(id => id !== selectedProject.id))} className="text-sm font-mono text-gray-600 uppercase hover:text-white transition-colors font-black pointer-events-auto">Retract Submission</button> */}
                     <button onClick={() => setSelectedProject(null)} className="w-full py-4 border border-white/10 text-gray-500 font-black rounded-[2rem] uppercase text-xs tracking-[0.3em] hover:bg-white/5 hover:text-white transition-all pointer-events-auto">Close</button>
                   </div>
                 )}
@@ -1977,10 +2049,20 @@ export default function App() {
                       </div>
                     ) : (
                       <>
-                        <button onClick={() => { setChallengeAccepted(prev => prev ? { ...prev, done: true } : null); setShowChallengeModal(false); }} className="flex-1 py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase text-sm tracking-widest hover:bg-emerald-500 transition-all">
+                        <button onClick={async () => {
+                          if (user?.id) {
+                            await completeChallengeMutation({ clerkId: user.id });
+                          }
+                          setShowChallengeModal(false);
+                        }} className="flex-1 py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase text-sm tracking-widest hover:bg-emerald-500 transition-all">
                           Mark as Done
                         </button>
-                        <button onClick={() => { setChallengeAccepted(null); setShowChallengeModal(false); }} className="py-4 px-6 border border-red-500/20 text-red-500/60 font-black rounded-2xl uppercase text-xs hover:bg-red-500/10 hover:text-red-400 transition-all">
+                        <button onClick={async () => {
+                          if (user?.id) {
+                            await abandonChallengeMutation({ clerkId: user.id });
+                          }
+                          setShowChallengeModal(false);
+                        }} className="py-4 px-6 border border-red-500/20 text-red-500/60 font-black rounded-2xl uppercase text-xs hover:bg-red-500/10 hover:text-red-400 transition-all">
                           Abandon
                         </button>
                       </>
@@ -1990,7 +2072,14 @@ export default function App() {
                       <button onClick={() => setShowChallengeModal(false)} className="py-4 px-6 border border-white/10 text-gray-500 font-black rounded-2xl uppercase text-xs hover:bg-white/5 hover:text-white transition-all">
                         Close
                       </button>
-                      <button onClick={() => { setChallengeAccepted({ title: dailyChallenge.title, acceptedAt: Date.now(), done: false, files: [] }); }} className="flex-1 py-4 bg-architectural-yellow text-black font-black rounded-2xl uppercase text-sm tracking-widest hover:brightness-110 transition-all shadow-[0_0_30px_rgba(244,180,0,0.25)]">
+                      <button onClick={async () => {
+                        if (user?.id) {
+                          await acceptChallengeMutation({
+                            clerkId: user.id,
+                            challengeTitle: dailyChallenge.title,
+                          });
+                        }
+                      }} className="flex-1 py-4 bg-architectural-yellow text-black font-black rounded-2xl uppercase text-sm tracking-widest hover:brightness-110 transition-all shadow-[0_0_30px_rgba(244,180,0,0.25)]">
                         Accept Challenge
                       </button>
                     </>

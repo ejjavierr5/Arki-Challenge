@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { SignIn, SignUp, useAuth } from '@clerk/react'
+import { SignIn, SignUp, useAuth, useUser } from '@clerk/react'
+import { useMutation } from 'convex/react'
+import { api } from '../convex/_generated/api'
 import Homepage from './Homepage'
 import ProjectDashboard from './ProjectDashboard'
 
@@ -27,6 +29,25 @@ function getRouteFromPath(): Route {
     return 'sign-up'
   }
   return 'home'
+}
+
+// Component to sync Clerk user to Convex
+function UserSync() {
+  const { user, isLoaded } = useUser()
+  const upsertUser = useMutation(api.users.upsertUser)
+
+  useEffect(() => {
+    if (isLoaded && user) {
+      upsertUser({
+        clerkId: user.id,
+        email: user.primaryEmailAddress?.emailAddress || '',
+        name: user.fullName || user.firstName || '',
+        imageUrl: user.imageUrl,
+      }).catch(console.error)
+    }
+  }, [isLoaded, user, upsertUser])
+
+  return null
 }
 
 // Sign In page component
@@ -114,7 +135,12 @@ function ProtectedDashboard() {
     return <SignInPage />
   }
 
-  return <ProjectDashboard />
+  return (
+    <>
+      <UserSync />
+      <ProjectDashboard />
+    </>
+  )
 }
 
 export default function App() {
