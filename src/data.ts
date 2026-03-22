@@ -34,6 +34,7 @@ export type Project = {
   };
   roomProgram: RoomProgram[];
   inspirations: { name: string; architect: string; why: string }[];
+  points: number;
 };
 
 export const projects: Project[] = [
@@ -96,6 +97,7 @@ export const projects: Project[] = [
       { name: "Amangiri Resort", architect: "Marwan Al-Sayed Architects", why: "Architecture that responds to landscape without dominating it" },
       { name: "Casa Wabi", architect: "Tadao Ando", why: "Concrete simplicity in a tropical coastal setting" },
     ],
+    points: 100,
   },
   {
     id: 'proj-002',
@@ -155,6 +157,7 @@ export const projects: Project[] = [
       { name: "Via 57 West", architect: "BIG Architects", why: "Hybrid courtyard typology that brings light to every unit" },
       { name: "Kampung Admiralty", architect: "WOHA Architects", why: "Mixed-use urban housing with shared sky gardens" },
     ],
+    points: 150,
   },
   {
     id: 'proj-003',
@@ -219,6 +222,7 @@ export const projects: Project[] = [
       { name: "The Shard", architect: "Renzo Piano", why: "Tapering glass spire as urban landmark and public destination" },
       { name: "CCTV Headquarters", architect: "Rem Koolhaas (OMA)", why: "The loop as a structural and programmatic innovation" },
     ],
+    points: 300,
   },
   {
     id: 'proj-004',
@@ -282,6 +286,7 @@ export const projects: Project[] = [
       { name: "National Museum of African American History", architect: "David Adjaye", why: "Cultural identity expressed through architectural form" },
       { name: "Smithsonian National Museum of the American Indian", architect: "Douglas Cardinal", why: "Earth tones and organic forms rooted in indigenous identity" },
     ],
+    points: 350,
   },
   {
     id: 'proj-005',
@@ -345,6 +350,7 @@ export const projects: Project[] = [
       { name: "Peckham Library", architect: "Alsop Architects", why: "Public civic building that announces itself boldly to its community" },
       { name: "Batak Rural Health Clinic", architect: "WOHA Architects", why: "Climate-responsive tropical health facility with natural ventilation" },
     ],
+    points: 75,
   },
   {
     id: 'proj-006',
@@ -410,6 +416,7 @@ export const projects: Project[] = [
       { name: "High Line NYC", architect: "Diller Scofidio + Renfro", why: "Infrastructure reclaimed as cultural landscape" },
       { name: "Zeitz MOCAA", architect: "Heatherwick Studio", why: "Grain silo cells carved to create an extraordinary interior" },
     ],
+    points: 600,
   },
   {
     id: 'proj-007',
@@ -477,6 +484,7 @@ export const projects: Project[] = [
       { name: "Saunders School", architect: "Olso Works", why: "School as community landmark in a tight urban site" },
       { name: "Helen & Hard School", architect: "Helen & Hard", why: "Timber structure that celebrates natural materials for children" },
     ],
+    points: 400,
   },
   {
     id: 'proj-008',
@@ -544,6 +552,7 @@ export const projects: Project[] = [
       { name: "Port of Tyne Master Plan", architect: "Peel Ports", why: "Integration of working port with surrounding community" },
       { name: "Port of Singapore Tuas", architect: "JTC Corporation", why: "Future-ready automated terminal design principles" },
     ],
+    points: 650,
   },
   {
     id: 'proj-009',
@@ -614,6 +623,7 @@ export const projects: Project[] = [
       { name: "Shanghai Tower", architect: "Gensler", why: "Spiraling facade that reduces wind load by 24% through geometry" },
       { name: "The Shard", architect: "Renzo Piano", why: "Mixed-use vertical city with retail, office, hotel, and residences" },
     ],
+    points: 900,
   },
   {
     id: 'proj-010',
@@ -688,6 +698,7 @@ export const projects: Project[] = [
       { name: "Como Shambhala Estate", architect: "Cheong Yew Kuan", why: "Tropical wellness resort integrated into forested hillside" },
       { name: "Six Senses Yao Noi", architect: "COMO Hotels", why: "Vernacular forms elevated to luxury without abandoning context" },
     ],
+    points: 950,
   },
 
   // ─── PLATES 11–40 ────────────────────────────────────────────────────────────
@@ -731,6 +742,7 @@ export const projects: Project[] = [
       { name: "Bahay Kubo", architect: "Filipino Vernacular", why: "The original Filipino micro-home — elevated, ventilated, honest" },
       { name: "Keret House", architect: "Jakub Szczesny", why: "The world's narrowest house proves small is not undignified" },
     ],
+    points: 125,
   },
   {
     id: 'proj-012',
@@ -778,6 +790,7 @@ export const projects: Project[] = [
       { name: "Columbus Fire Station No. 5", architect: "Robert Venturi", why: "Civic building that communicates its purpose to the street" },
       { name: "West Vancouver Fire Hall", architect: "Hughes Condon Marler", why: "Glass apparatus bay as transparent civic gesture" },
     ],
+    points: 450,
   },
   {
     id: 'proj-013',
@@ -823,6 +836,7 @@ export const projects: Project[] = [
       { name: "Floating Sauna Oslo", architect: "Kystverket", why: "The floating structure as pure pleasure architecture" },
       { name: "Panyaden Restaurant", architect: "Chiangmai Life Architects", why: "Open tropical dining pavilion using natural materials" },
     ],
+    points: 700,
   },
   {
     id: 'proj-014',
@@ -872,6 +886,7 @@ export const projects: Project[] = [
       { name: "National Aquatics Center Beijing", architect: "PTW Architects / CSCEC", why: "Bubble membrane as both structure and environmental skin" },
       { name: "Ponds at Hever Castle", architect: "William Waldorf Astor", why: "Water as landscape — the original aquatic design brief" },
     ],
+    points: 1000,
   },
   {
     id: 'proj-015',
@@ -919,6 +934,7 @@ export const projects: Project[] = [
       { name: "Tsukiji Outer Market Tokyo", architect: "Traditional", why: "Market stalls evolved by use — architecture as accumulated culture" },
       { name: "Mercado Central Valencia", architect: "Alejandro Soler March", why: "Market hall as civic architecture with a dome of light" },
     ],
+    points: 250,
   },
   {
     id: 'proj-016',
@@ -959,6 +975,7 @@ export const projects: Project[] = [
       { name: "Free Spirit Spheres", architect: "Tom Chudleigh", why: "Woven sphere suspended in the forest canopy" },
       { name: "Yellow Treehouse Restaurant", architect: "Pacific Environments", why: "Pod structure elevated 10m in a redwood — structure as wonder" },
     ],
+    points: 50,
   },
   {
     id: 'proj-017',
@@ -1004,6 +1021,7 @@ export const projects: Project[] = [
       { name: "Autobahnraststatte Sternenplatz", architect: "Smarch", why: "Highway rest stop as landscape architecture" },
       { name: "Solar Roadside Rest Area", architect: "Bjarke Ingels Group", why: "Rest stop integrated with renewable energy infrastructure" },
     ],
+    points: 375,
   },
   {
     id: 'proj-018',
@@ -1047,6 +1065,7 @@ export const projects: Project[] = [
       { name: "Chapel of Notre-Dame du Haut", architect: "Le Corbusier", why: "The chapel that changed what a religious building could be" },
       { name: "Church of the Light", architect: "Tadao Ando", why: "Two slits of light in concrete — absolute reduction" },
     ],
+    points: 750,
   },
   {
     id: 'proj-019',
@@ -1093,6 +1112,7 @@ export const projects: Project[] = [
       { name: "Bosco Verticale", architect: "Stefano Boeri Architetti", why: "Vertical forest integrated structurally into residential towers" },
       { name: "Plantagon Vertical Farm", architect: "Sweco", why: "Spherical greenhouse tower as a model for urban food production" },
     ],
+    points: 875,
   },
   {
     id: 'proj-020',
@@ -1138,6 +1158,7 @@ export const projects: Project[] = [
       { name: "Previ Lima Housing", architect: "Various International Architects", why: "Low-income housing as architectural laboratory" },
       { name: "Kampung Admiralty", architect: "WOHA Architects", why: "Social housing elevated into a community landmark" },
     ],
+    points: 325,
   },
   {
     id: 'proj-021',
@@ -1182,6 +1203,7 @@ export const projects: Project[] = [
       { name: "1111 Lincoln Road Miami", architect: "Herzog & de Meuron", why: "Car park transformed into an event venue and landmark" },
       { name: "Wozoco Apartments", architect: "MVRDV", why: "Cantilevered units as structural expression in a constrained site" },
     ],
+    points: 475,
   },
   {
     id: 'proj-022',
@@ -1231,6 +1253,7 @@ export const projects: Project[] = [
       { name: "US Embassy London", architect: "KieranTimberlake", why: "Security and openness in diplomatic architecture" },
       { name: "Canadian Embassy Washington", architect: "Arthur Erickson", why: "The colonnade as a civic gesture in a capital city" },
     ],
+    points: 575,
   },
   {
     id: 'proj-023',
@@ -1274,6 +1297,7 @@ export const projects: Project[] = [
       { name: "Fabriek Restaurant Amsterdam", architect: "i29 Architects", why: "Industrial space transformed into intimate dining" },
       { name: "Silo Cape Town", architect: "Heatherwick Studio", why: "Grain silo reimagined as destination architecture" },
     ],
+    points: 200,
   },
   {
     id: 'proj-024',
@@ -1320,6 +1344,7 @@ export const projects: Project[] = [
       { name: "Sorrisniva Igloo Hotel Norway", architect: "Traditional", why: "Architecture that disappears into its landscape by being made of it" },
       { name: "Longitude 131 Uluru", architect: "Philip Cox", why: "Luxury eco-lodge that honors the sacred landscape it inhabits" },
     ],
+    points: 625,
   },
   {
     id: 'proj-025',
@@ -1365,6 +1390,7 @@ export const projects: Project[] = [
       { name: "Petra Winery Portugal", architect: "Mario Botta", why: "Winery architecture as a carved cylindrical landscape form" },
       { name: "Bodegas Ysios", architect: "Santiago Calatrava", why: "The undulating aluminum roof as a rioja landscape" },
     ],
+    points: 675,
   },
   {
     id: 'proj-026',
@@ -1413,6 +1439,7 @@ export const projects: Project[] = [
       { name: "Seattle Central Library", architect: "Rem Koolhaas (OMA)", why: "Library as a machine for organizing and distributing knowledge" },
       { name: "Stuttgart City Library", architect: "Eun Young Yi", why: "The inverted ziggurat as a pure interior landscape of books" },
     ],
+    points: 280,
   },
   {
     id: 'proj-027',
@@ -1460,6 +1487,7 @@ export const projects: Project[] = [
       { name: "NATO Headquarters Brussels", architect: "SOM", why: "Security architecture that projects confidence, not fortification" },
       { name: "Singapore Civil Defence HQ", architect: "CPG Consultants", why: "Emergency operations integrated with public civic presence" },
     ],
+    points: 850,
   },
   {
     id: 'proj-028',
@@ -1503,6 +1531,7 @@ export const projects: Project[] = [
       { name: "Muji Hotel Shenzhen", architect: "Muji / Super Potato", why: "Hotel rooms stripped to essentials — beauty through reduction" },
       { name: "The Pod Hotel NYC", architect: "Stonehill Taylor", why: "Budget accommodation elevated by thoughtful compact design" },
     ],
+    points: 80,
   },
   {
     id: 'proj-029',
@@ -1552,6 +1581,7 @@ export const projects: Project[] = [
       { name: "Facebook MPK 20", architect: "Frank Gehry", why: "Single-room open office under a rooftop park" },
       { name: "Googleplex", architect: "Clive Wilkinson Architects", why: "Campus urbanism that blurs work, play, and community" },
     ],
+    points: 975,
   },
   {
     id: 'proj-030',
@@ -1598,6 +1628,7 @@ export const projects: Project[] = [
       { name: "Expo 2020 Dubai Al Wasl Dome", architect: "Adrian Smith + Gordon Gill", why: "Largest 360-degree projection dome as event architecture" },
       { name: "Arup Acoustics Concert Shell", architect: "Arup", why: "Portable concert shell designed for acoustic perfection" },
     ],
+    points: 425,
   },
   {
     id: 'proj-031',
@@ -1644,6 +1675,7 @@ export const projects: Project[] = [
       { name: "Maggie's Centre Inverness", architect: "Page/Park Architects", why: "Domestic scale in a healthcare setting — the house as healing" },
       { name: "Parkland Hospital Dallas", architect: "HDR Architecture", why: "Patient-centered design principles at large hospital scale" },
     ],
+    points: 310,
   },
   {
     id: 'proj-032',
@@ -1689,6 +1721,7 @@ export const projects: Project[] = [
       { name: "SkatePark de Marseille", architect: "Various", why: "Organic concrete bowl form as landscape architecture" },
       { name: "Burnside Skatepark Portland", architect: "Skaters / DIY", why: "The most important skatepark ever built — by skaters, not architects" },
     ],
+    points: 175,
   },
   {
     id: 'proj-033',
@@ -1736,6 +1769,7 @@ export const projects: Project[] = [
       { name: "Google Data Center Oregon", architect: "Google / Burns McDonnell", why: "Industrial efficiency elevated to a design standard" },
       { name: "Apple Data Center Maiden NC", architect: "Apple / AECOM", why: "100% renewable energy data center campus" },
     ],
+    points: 925,
   },
   {
     id: 'proj-034',
@@ -1780,6 +1814,7 @@ export const projects: Project[] = [
       { name: "Langston Hughes Library", architect: "Frank Lloyd Wright", why: "Community building scaled to the people who use it" },
       { name: "Cooper Union Student Housing", architect: "Morphosis", why: "Affordable student housing as rigorous architecture" },
     ],
+    points: 60,
   },
   {
     id: 'proj-035',
@@ -1825,6 +1860,7 @@ export const projects: Project[] = [
       { name: "Wetland Park Hong Kong", architect: "Simon Foxell / Architectural Services Dept.", why: "Nature reserve with visitor facilities that serve as education" },
       { name: "Parc des Oiseaux Villars", architect: "Various", why: "Bird sanctuary infrastructure that becomes public architecture" },
     ],
+    points: 760,
   },
   {
     id: 'proj-036',
@@ -1870,6 +1906,7 @@ export const projects: Project[] = [
       { name: "Woodland Cemetery Stockholm", architect: "Gunnar Asplund", why: "Landscape and mortality unified in a single sacred place" },
       { name: "Aga Khan Mausoleum Aswan", architect: "Mausoleum Design", why: "Simple mass on a hillside — dignity through restraint" },
     ],
+    points: 360,
   },
   {
     id: 'proj-037',
@@ -1917,6 +1954,7 @@ export const projects: Project[] = [
       { name: "Longitude 131 Uluru", architect: "Philip Cox Richardson", why: "Canvas pavilions facing the world's most sacred rock" },
       { name: "Six Senses Con Dao", architect: "Six Senses Design Team", why: "Eco-resort integrated into an island with zero visual impact" },
     ],
+    points: 680,
   },
   {
     id: 'proj-038',
@@ -1967,6 +2005,7 @@ export const projects: Project[] = [
       { name: "Elbphilharmonie Hamburg", architect: "Herzog & de Meuron", why: "The vineyard concert hall elevated above a historic warehouse" },
       { name: "CERN Globe Geneva", architect: "Thomas Buchi", why: "Timber grid sphere as a symbol of scientific wonder" },
     ],
+    points: 980,
   },
   {
     id: 'proj-039',
@@ -2011,6 +2050,7 @@ export const projects: Project[] = [
       { name: "Shell Recharge Station Netherlands", architect: "UNStudio", why: "Petrol station reimagined for the electric vehicle era" },
       { name: "COOP Gas Station Valtakunnan", architect: "Lahdelma & Mahlamaki", why: "Service station elevated to civic architecture through material honesty" },
     ],
+    points: 140,
   },
   {
     id: 'proj-040',
@@ -2059,5 +2099,6 @@ export const projects: Project[] = [
       { name: "Paley Park New York", architect: "Zion & Breen", why: "Tiny urban room of water and trees — the pocket plaza as urban relief" },
       { name: "Superkilen Copenhagen", architect: "BIG + Superflex + Topotek1", why: "Urban park as global collection — 60 objects from 60 countries" },
     ],
+    points: 1000,
   },
 ];
