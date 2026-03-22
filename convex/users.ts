@@ -1,6 +1,14 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Generate unique friend code
+function generateFriendCode(): string {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const part1 = Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const part2 = Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `ARCH-${part1}-${part2}`;
+}
+
 // Get current user by Clerk ID
 export const getUser = query({
   args: { clerkId: v.string() },
@@ -38,14 +46,45 @@ export const upsertUser = mutation({
     const now = Date.now();
 
     if (existingUser) {
-      await ctx.db.patch(existingUser._id, {
+      // If user exists but doesn't have friendCode, generate one
+      const updates: any = {
         email: args.email,
         name: args.name,
         imageUrl: args.imageUrl,
         updatedAt: now,
-      });
+      };
+      
+      if (!existingUser.friendCode) {
+        // Generate unique friend code for existing user
+        let friendCode: string;
+        let isUnique = false;
+        do {
+          friendCode = generateFriendCode();
+          const existing = await ctx.db
+            .query("users")
+            .withIndex("by_friend_code", (q) => q.eq("friendCode", friendCode))
+            .first();
+          isUnique = !existing;
+        } while (!isUnique);
+        
+        updates.friendCode = friendCode;
+      }
+      
+      await ctx.db.patch(existingUser._id, updates);
       return existingUser._id;
     } else {
+      // Generate unique friend code for new user
+      let friendCode: string;
+      let isUnique = false;
+      do {
+        friendCode = generateFriendCode();
+        const existing = await ctx.db
+          .query("users")
+          .withIndex("by_friend_code", (q) => q.eq("friendCode", friendCode))
+          .first();
+        isUnique = !existing;
+      } while (!isUnique);
+
       return await ctx.db.insert("users", {
         clerkId: args.clerkId,
         email: args.email,
@@ -54,6 +93,7 @@ export const upsertUser = mutation({
         title: "Student Architect",
         specialties: [],
         designPreferences: [],
+        friendCode,
         createdAt: now,
         updatedAt: now,
       });

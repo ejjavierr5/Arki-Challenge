@@ -523,6 +523,7 @@ export default function App() {
   const projectsData = useQuery(api.projects.getUserProjects, user?.id ? { clerkId: user.id } : "skip");
   const journalData = useQuery(api.journal.getJournalEntries, user?.id ? { clerkId: user.id } : "skip");
   const challengeData = useQuery(api.challenges.getChallengeProgress, user?.id ? { clerkId: user.id } : "skip");
+  const friendsData = useQuery(api.friends.getFriends, user?.id ? { clerkId: user.id } : "skip");
   
   // Convex mutations
   const acceptProjectMutation = useMutation(api.projects.acceptProject);
@@ -535,6 +536,8 @@ export default function App() {
   const acceptChallengeMutation = useMutation(api.challenges.acceptChallenge);
   const completeChallengeMutation = useMutation(api.challenges.completeChallenge);
   const abandonChallengeMutation = useMutation(api.challenges.abandonChallenge);
+  const addFriendMutation = useMutation(api.friends.addFriend);
+  const removeFriendMutation = useMutation(api.friends.removeFriend);
 
   // Derived state from Convex data
   const acceptedData = useMemo(() => projectsData?.accepted || {}, [projectsData]);
@@ -579,9 +582,17 @@ export default function App() {
     setProfileDraft(profileData);
   }, [profileData]);
 
+  // Friends data from Convex
   type Friend = { id: string; name: string; title: string; school: string; firm: string; avatarUrl: string; specialties: string[]; addedAt: number };
-  const [friends, setFriends] = useState<Friend[]>([]); // TODO: Connect to Convex when friends feature is fully implemented
-  const [friendCode, setFriendCode] = useState('');
+  const friends = useMemo((): Friend[] => {
+    return friendsData || [];
+  }, [friendsData]);
+  
+  // User's friend code from Convex
+  const friendCode = useMemo(() => {
+    return convexUser?.friendCode || '';
+  }, [convexUser]);
+  
   const [friendCodeInput, setFriendCodeInput] = useState('');
   const [addFriendError, setAddFriendError] = useState('');
   const [profileTab, setProfileTab] = useState<'profile' | 'friends'>('profile');
@@ -649,35 +660,37 @@ export default function App() {
 
   // Data is now persisted in Convex, no localStorage sync needed
 
-  // Generate a unique friend code based on profile name + random seed stored in localStorage
-  useEffect(() => {
-    let code = localStorage.getItem('arch_friend_code');
-    if (!code) {
-      code = 'ARCH-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-      localStorage.setItem('arch_friend_code', code);
-    }
-    setFriendCode(code);
-  }, []);
-
-  const handleAddFriend = () => {
+  const handleAddFriend = async () => {
     const code = friendCodeInput.trim().toUpperCase();
     setAddFriendError('');
-    if (!code) { setAddFriendError('Enter a friend code first.'); return; }
-    if (code === friendCode) { setAddFriendError("That's your own code!"); return; }
-    if (friends.find(f => f.id === code)) { setAddFriendError('Already in your peers list.'); return; }
-    // In a real app this would look up from a server — here we create a placeholder peer
-    const newFriend: Friend = {
-      id: code,
-      name: 'Studio Peer',
-      title: 'Architect',
-      school: 'Unknown School',
-      firm: '',
-      avatarUrl: '',
-      specialties: [],
-      addedAt: Date.now(),
-    };
-    setFriends(prev => [...prev, newFriend]);
-    setFriendCodeInput('');
+    
+    if (!code) { 
+      setAddFriendError('Enter a friend code first.'); 
+      return; 
+    }
+    
+    if (code === friendCode) { 
+      setAddFriendError("That's your own code!"); 
+      return; 
+    }
+    
+    if (friends.find(f => f.id === code)) { 
+      setAddFriendError('Already in your peers list.'); 
+      return; 
+    }
+
+    try {
+      if (user?.id) {
+        await addFriendMutation({
+          clerkId: user.id,
+          friendCode: code,
+        });
+        setFriendCodeInput('');
+        setAddFriendError('');
+      }
+    } catch (error: any) {
+      setAddFriendError(error.message || 'Failed to add friend');
+    }
   };
 
   // XP & Level calculations
@@ -1533,7 +1546,18 @@ export default function App() {
                           <p className="font-black text-white text-sm truncate">{f.name}</p>
                           <p className="text-[9px] font-mono text-gray-500 uppercase truncate">{f.title}</p>
                         </div>
-                        <button onClick={() => setFriends(prev => prev.filter(p => p.id !== f.id))} className="p-1.5 hover:bg-red-500/10 rounded-lg transition-all shrink-0" title="Remove peer">
+                        <button onClick={async () => {
+                          if (user?.id) {
+                            try {
+                              await removeFriendMutation({
+                                clerkId: user.id,
+                                friendCode: f.id,
+                              });
+                            } catch (error) {
+                              console.error('Failed to remove friend:', error);
+                            }
+                          }
+                        }} className="p-1.5 hover:bg-red-500/10 rounded-lg transition-all shrink-0" title="Remove peer">
                           <Icons.UserMinus size={13} className="text-gray-600 hover:text-red-400" />
                         </button>
                       </div>

@@ -14,11 +14,13 @@ export default defineSchema({
     bio: v.optional(v.string()),
     specialties: v.optional(v.array(v.string())),
     designPreferences: v.optional(v.array(v.string())),
+    friendCode: v.optional(v.string()), // Optional for backwards compatibility
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_clerk_id", ["clerkId"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_friend_code", ["friendCode"]),
 
   // Accepted projects
   acceptedProjects: defineTable({
