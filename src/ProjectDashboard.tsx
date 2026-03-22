@@ -511,7 +511,7 @@ const DAILY_CHALLENGES: DailyChallenge[] = [
 ];
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'calendar' | 'gantt' | 'profile'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'calendar' | 'gantt' | 'profile' | 'friends'>('dashboard');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [acceptedData, setAcceptedData] = useState<Record<string, number>>(() => {
     try { return JSON.parse(localStorage.getItem('arch_acceptedData') || '{}'); } catch { return {}; }
@@ -522,12 +522,28 @@ export default function App() {
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, Record<string, any>>>(() => {
     try { return JSON.parse(localStorage.getItem('arch_uploadedFiles') || '{}'); } catch { return {}; }
   });
-  const [profileData, setProfileData] = useState<{ name: string; title: string; school: string; firm: string; bio: string; avatarUrl: string }>(() => {
-    try { return JSON.parse(localStorage.getItem('arch_profile') || 'null') || { name: '', title: 'Student Architect', school: '', firm: '', bio: '', avatarUrl: '' }; } catch { return { name: '', title: 'Student Architect', school: '', firm: '', bio: '', avatarUrl: '' }; }
+
+  type ProfileType = {
+    name: string; title: string; school: string; firm: string; bio: string; avatarUrl: string;
+    specialties: string[]; designPreferences: string[];
+  };
+  const defaultProfile: ProfileType = { name: '', title: 'Student Architect', school: '', firm: '', bio: '', avatarUrl: '', specialties: [], designPreferences: [] };
+
+  const [profileData, setProfileData] = useState<ProfileType>(() => {
+    try { return { ...defaultProfile, ...JSON.parse(localStorage.getItem('arch_profile') || 'null') }; } catch { return defaultProfile; }
   });
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState(profileData);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  type Friend = { id: string; name: string; title: string; school: string; firm: string; avatarUrl: string; specialties: string[]; addedAt: number };
+  const [friends, setFriends] = useState<Friend[]>(() => {
+    try { return JSON.parse(localStorage.getItem('arch_friends') || '[]'); } catch { return []; }
+  });
+  const [friendCode, setFriendCode] = useState('');
+  const [friendCodeInput, setFriendCodeInput] = useState('');
+  const [addFriendError, setAddFriendError] = useState('');
+  const [profileTab, setProfileTab] = useState<'profile' | 'friends'>('profile');
   const [globalTime, setGlobalTime] = useState(Date.now());
   const [filter, setFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
@@ -602,6 +618,38 @@ export default function App() {
   useEffect(() => { localStorage.setItem('arch_uploadedFiles', JSON.stringify(uploadedFiles)); }, [uploadedFiles]);
   useEffect(() => { localStorage.setItem('arch_challenge', JSON.stringify(challengeAccepted)); }, [challengeAccepted]);
   useEffect(() => { localStorage.setItem('arch_profile', JSON.stringify(profileData)); }, [profileData]);
+  useEffect(() => { localStorage.setItem('arch_friends', JSON.stringify(friends)); }, [friends]);
+
+  // Generate a unique friend code based on profile name + random seed stored in localStorage
+  useEffect(() => {
+    let code = localStorage.getItem('arch_friend_code');
+    if (!code) {
+      code = 'ARCH-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+      localStorage.setItem('arch_friend_code', code);
+    }
+    setFriendCode(code);
+  }, []);
+
+  const handleAddFriend = () => {
+    const code = friendCodeInput.trim().toUpperCase();
+    setAddFriendError('');
+    if (!code) { setAddFriendError('Enter a friend code first.'); return; }
+    if (code === friendCode) { setAddFriendError("That's your own code!"); return; }
+    if (friends.find(f => f.id === code)) { setAddFriendError('Already in your peers list.'); return; }
+    // In a real app this would look up from a server — here we create a placeholder peer
+    const newFriend: Friend = {
+      id: code,
+      name: 'Studio Peer',
+      title: 'Architect',
+      school: 'Unknown School',
+      firm: '',
+      avatarUrl: '',
+      specialties: [],
+      addedAt: Date.now(),
+    };
+    setFriends(prev => [...prev, newFriend]);
+    setFriendCodeInput('');
+  };
 
   // XP & Level calculations
   const totalXP = useMemo(() => {
@@ -883,36 +931,70 @@ export default function App() {
           <button onClick={() => setCurrentView('gantt')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'gantt' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.GanttChart size={16} /> Gantt Chart</button>
           <button onClick={() => setCurrentView('profile')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'profile' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.User size={16} /> Profile</button>
 
-          <div className="pt-8 pb-3 text-[9px] font-mono text-gray-600 uppercase tracking-widest border-b border-white/5 mb-2">Category</div>
-          {['all', 'residential', 'commercial', 'industrial', 'institutional', 'infrastructure', 'high-rise'].map(c => (
-            <button key={c} onClick={() => { setFilter(c); setCurrentView('dashboard'); }} className={cn("w-full text-left px-3 py-2 rounded-md text-[10px] font-mono uppercase transition-all", filter === c ? "text-white bg-white/5" : "text-gray-600 hover:text-gray-400")}>{c}</button>
-          ))}
+          <div className="pt-6 border-t border-white/5 space-y-3">
+            <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest font-black flex items-center gap-1.5"><Icons.Filter size={9} /> Filters</p>
 
-          <div className="pt-6 pb-3 text-[9px] font-mono text-gray-600 uppercase tracking-widest border-b border-white/5 mb-2">Difficulty</div>
-          {[
-            { value: 'all', label: 'All Levels', color: 'text-gray-400' },
-            { value: 'Easy', label: 'Easy', color: 'text-emerald-400' },
-            { value: 'Medium', label: 'Medium', color: 'text-blue-400' },
-            { value: 'Hard', label: 'Hard', color: 'text-orange-400' },
-            { value: 'Master', label: 'Master', color: 'text-red-400' },
-          ].map(d => (
-            <button key={d.value} onClick={() => { setDifficultyFilter(d.value); setCurrentView('dashboard'); }} className={cn("w-full text-left px-3 py-2 rounded-md text-[10px] font-mono uppercase transition-all flex items-center gap-2", difficultyFilter === d.value ? "bg-white/5 text-white" : "text-gray-600 hover:text-gray-400")}>
-              <span className={cn("w-1.5 h-1.5 rounded-full inline-block", d.value !== 'all' ? d.color.replace('text-', 'bg-') : 'bg-gray-600')} />
-              {d.label}
-            </button>
-          ))}
+            {/* Category */}
+            <div>
+              <label className="text-[8px] font-mono text-gray-700 uppercase font-black block mb-1">Category</label>
+              <div className="relative">
+                <select
+                  value={filter}
+                  onChange={e => { setFilter(e.target.value); setCurrentView('dashboard'); }}
+                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-gray-300 uppercase focus:border-architectural-yellow outline-none cursor-pointer hover:bg-white/10 transition-all pr-7"
+                >
+                  {['all', 'residential', 'commercial', 'industrial', 'institutional', 'infrastructure', 'high-rise'].map(c => (
+                    <option key={c} value={c} className="bg-[#0f1115] text-gray-300">{c === 'all' ? 'All Categories' : c}</option>
+                  ))}
+                </select>
+                <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
 
-          <div className="pt-6 pb-3 text-[9px] font-mono text-gray-600 uppercase tracking-widest border-b border-white/5 mb-2">Status</div>
-          {[
-            { value: 'all', label: 'All Projects', icon: <Icons.LayoutGrid size={10} /> },
-            { value: 'open', label: 'Open', icon: <Icons.Unlock size={10} /> },
-            { value: 'active', label: 'In Production', icon: <Icons.Timer size={10} /> },
-            { value: 'submitted', label: 'Submitted', icon: <Icons.CheckCircle size={10} /> },
-          ].map(s => (
-            <button key={s.value} onClick={() => { setStatusFilter(s.value); setCurrentView('dashboard'); }} className={cn("w-full text-left px-3 py-2 rounded-md text-[10px] font-mono uppercase transition-all flex items-center gap-2", statusFilter === s.value ? "bg-white/5 text-white" : "text-gray-600 hover:text-gray-400")}>
-              {s.icon}{s.label}
-            </button>
-          ))}
+            {/* Difficulty */}
+            <div>
+              <label className="text-[8px] font-mono text-gray-700 uppercase font-black block mb-1">Difficulty</label>
+              <div className="relative">
+                <select
+                  value={difficultyFilter}
+                  onChange={e => { setDifficultyFilter(e.target.value); setCurrentView('dashboard'); }}
+                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-gray-300 uppercase focus:border-architectural-yellow outline-none cursor-pointer hover:bg-white/10 transition-all pr-7"
+                >
+                  <option value="all" className="bg-[#0f1115]">All Levels</option>
+                  <option value="Easy" className="bg-[#0f1115]">Easy</option>
+                  <option value="Medium" className="bg-[#0f1115]">Medium</option>
+                  <option value="Hard" className="bg-[#0f1115]">Hard</option>
+                  <option value="Master" className="bg-[#0f1115]">Master</option>
+                </select>
+                <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="text-[8px] font-mono text-gray-700 uppercase font-black block mb-1">Status</label>
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={e => { setStatusFilter(e.target.value); setCurrentView('dashboard'); }}
+                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-gray-300 uppercase focus:border-architectural-yellow outline-none cursor-pointer hover:bg-white/10 transition-all pr-7"
+                >
+                  <option value="all" className="bg-[#0f1115]">All Projects</option>
+                  <option value="open" className="bg-[#0f1115]">Open</option>
+                  <option value="active" className="bg-[#0f1115]">In Production</option>
+                  <option value="submitted" className="bg-[#0f1115]">Submitted</option>
+                </select>
+                <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Clear button */}
+            {(filter !== 'all' || difficultyFilter !== 'all' || statusFilter !== 'all') && (
+              <button onClick={() => { setFilter('all'); setDifficultyFilter('all'); setStatusFilter('all'); }} className="w-full py-2 text-[9px] font-mono text-red-500/60 uppercase font-black hover:text-red-400 transition-all flex items-center justify-center gap-1.5">
+                <Icons.X size={9} /> Clear Filters
+              </button>
+            )}
+          </div>
         </nav>
         <button onClick={handleAuth} className="mt-8 py-3 border border-white/10 rounded-lg font-mono text-[10px] uppercase hover:bg-architectural-yellow hover:text-black transition-all font-bold tracking-widest">
           {accessToken ? '✓ DRIVE LINKED' : 'CONNECT DRIVE'}
@@ -1168,7 +1250,20 @@ export default function App() {
             })()}
           </motion.section>
         ) : currentView === 'profile' ? (
-          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+
+            {/* Profile / Friends Tab Switch */}
+            <div className="flex gap-2 p-1.5 bg-white/5 border border-white/10 rounded-2xl w-fit">
+              <button onClick={() => setProfileTab('profile')} className={cn("px-6 py-2.5 rounded-xl text-xs font-mono uppercase font-black transition-all", profileTab === 'profile' ? "bg-white/10 text-white shadow-inner" : "text-gray-500 hover:text-gray-300")}>
+                <span className="flex items-center gap-2"><Icons.User size={13} />My Profile</span>
+              </button>
+              <button onClick={() => setProfileTab('friends')} className={cn("px-6 py-2.5 rounded-xl text-xs font-mono uppercase font-black transition-all flex items-center gap-2", profileTab === 'friends' ? "bg-white/10 text-white shadow-inner" : "text-gray-500 hover:text-gray-300")}>
+                <Icons.Users size={13} />Studio Peers
+                {friends.length > 0 && <span className="bg-architectural-yellow text-black text-[8px] font-black px-1.5 py-0.5 rounded-full">{friends.length}</span>}
+              </button>
+            </div>
+
+            {profileTab === 'profile' ? (<>
 
             {/* PROFILE HEADER */}
             <div className="p-10 bg-white/[0.02] border border-white/10 rounded-[2rem] flex items-start gap-8 relative">
@@ -1177,48 +1272,47 @@ export default function App() {
                   <Icons.PencilLine size={12} /> Edit Profile
                 </button>
               )}
-
-              {/* Avatar */}
               <div className="relative shrink-0">
                 <div className="w-28 h-28 rounded-[1.5rem] overflow-hidden border-2 border-white/10 shadow-2xl bg-architectural-yellow flex items-center justify-center">
-                  {profileData.avatarUrl ? (
-                    <img src={profileData.avatarUrl} className="w-full h-full object-cover" alt="avatar" />
-                  ) : (
-                    <span className="text-black font-black text-3xl">{profileData.name ? profileData.name[0].toUpperCase() : 'A'}</span>
-                  )}
+                  {profileData.avatarUrl ? <img src={profileData.avatarUrl} className="w-full h-full object-cover" alt="avatar" /> : <span className="text-black font-black text-3xl">{profileData.name ? profileData.name[0].toUpperCase() : 'A'}</span>}
                 </div>
-                {editingProfile && (
-                  <button onClick={() => avatarInputRef.current?.click()} className="absolute -bottom-2 -right-2 p-2 bg-architectural-yellow text-black rounded-xl shadow-lg hover:brightness-110 transition-all">
-                    <Icons.Camera size={12} />
-                  </button>
-                )}
+                {editingProfile && <button onClick={() => avatarInputRef.current?.click()} className="absolute -bottom-2 -right-2 p-2 bg-architectural-yellow text-black rounded-xl shadow-lg hover:brightness-110 transition-all"><Icons.Camera size={12} /></button>}
               </div>
 
-              {/* Info */}
               {editingProfile ? (
                 <div className="flex-1 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1">Full Name</label>
-                      <input value={profileDraft.name} onChange={e => setProfileDraft(p => ({ ...p, name: e.target.value }))} placeholder="Your name" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1">Title / Role</label>
-                      <input value={profileDraft.title} onChange={e => setProfileDraft(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Student Architect" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1 flex items-center gap-1"><Icons.GraduationCap size={9} /> School / University</label>
-                      <input value={profileDraft.school} onChange={e => setProfileDraft(p => ({ ...p, school: e.target.value }))} placeholder="e.g. University of Santo Tomas" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1 flex items-center gap-1"><Icons.Building2 size={9} /> Architectural Firm</label>
-                      <input value={profileDraft.firm} onChange={e => setProfileDraft(p => ({ ...p, firm: e.target.value }))} placeholder="e.g. Juan dela Cruz Architects" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
-                    </div>
+                    <div><label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1">Full Name</label><input value={profileDraft.name} onChange={e => setProfileDraft(p => ({ ...p, name: e.target.value }))} placeholder="Your name" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" /></div>
+                    <div><label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1">Title / Role</label><input value={profileDraft.title} onChange={e => setProfileDraft(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Student Architect" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" /></div>
+                    <div><label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1 flex items-center gap-1"><Icons.GraduationCap size={9} /> School</label><input value={profileDraft.school} onChange={e => setProfileDraft(p => ({ ...p, school: e.target.value }))} placeholder="e.g. UST College of Architecture" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" /></div>
+                    <div><label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1 flex items-center gap-1"><Icons.Building2 size={9} /> Architectural Firm</label><input value={profileDraft.firm} onChange={e => setProfileDraft(p => ({ ...p, firm: e.target.value }))} placeholder="e.g. Juan dela Cruz Architects" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" /></div>
                   </div>
+                  <div><label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1">Bio</label><textarea value={profileDraft.bio} onChange={e => setProfileDraft(p => ({ ...p, bio: e.target.value }))} placeholder="Tell us about yourself..." rows={2} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none resize-none transition-all" /></div>
+
+                  {/* Specialties */}
                   <div>
-                    <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-1">Bio</label>
-                    <textarea value={profileDraft.bio} onChange={e => setProfileDraft(p => ({ ...p, bio: e.target.value }))} placeholder="Tell us about yourself..." rows={2} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none resize-none transition-all" />
+                    <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-2 flex items-center gap-1"><Icons.Cpu size={9} /> Software Specialties</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['AutoCAD', 'Revit', 'SketchUp', 'Rhino', 'Grasshopper', 'Lumion', 'V-Ray', 'Enscape', 'ArchiCAD', 'Navisworks', 'Blender', '3ds Max', 'Adobe Suite', 'Civil 3D', 'BIM 360'].map(s => (
+                        <button key={s} onClick={() => setProfileDraft(p => ({ ...p, specialties: p.specialties.includes(s) ? p.specialties.filter(x => x !== s) : [...p.specialties, s] }))} className={cn("px-3 py-1.5 rounded-xl text-[10px] font-mono font-black uppercase transition-all border", profileDraft.specialties.includes(s) ? "bg-architectural-yellow/20 border-architectural-yellow/40 text-architectural-yellow" : "bg-white/5 border-white/10 text-gray-500 hover:text-gray-300")}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Design Preferences */}
+                  <div>
+                    <label className="text-[9px] font-mono text-gray-500 uppercase font-black block mb-2 flex items-center gap-1"><Icons.Palette size={9} /> Design Preferences</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Filipino Vernacular', 'Japandi', 'Brutalism', 'Minimalism', 'Biophilic', 'Parametric', 'Art Deco', 'Tropical Modern', 'Industrial', 'Neoclassical', 'Deconstructivism', 'Organic', 'Scandinavian', 'Mediterranean', 'Futurism', 'Adaptive Reuse'].map(d => (
+                        <button key={d} onClick={() => setProfileDraft(p => ({ ...p, designPreferences: p.designPreferences.includes(d) ? p.designPreferences.filter(x => x !== d) : [...p.designPreferences, d] }))} className={cn("px-3 py-1.5 rounded-xl text-[10px] font-mono font-black uppercase transition-all border", profileDraft.designPreferences.includes(d) ? "bg-blue-500/20 border-blue-500/40 text-blue-400" : "bg-white/5 border-white/10 text-gray-500 hover:text-gray-300")}>
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="flex gap-3">
                     <button onClick={() => { setProfileData(profileDraft); setEditingProfile(false); }} className="px-6 py-2.5 bg-architectural-yellow text-black font-black rounded-xl text-xs font-mono uppercase hover:brightness-110 transition-all">Save Profile</button>
                     <button onClick={() => setEditingProfile(false)} className="px-6 py-2.5 bg-white/5 border border-white/10 text-gray-400 font-black rounded-xl text-xs font-mono uppercase hover:bg-white/10 transition-all">Cancel</button>
@@ -1229,10 +1323,28 @@ export default function App() {
                   <h1 className="text-4xl font-black uppercase tracking-tighter text-white">{profileData.name || 'Unnamed Architect'}</h1>
                   <p className="text-architectural-yellow font-mono text-sm uppercase tracking-widest mt-1 font-bold">{profileData.title}</p>
                   {profileData.bio && <p className="text-gray-400 text-sm mt-3 leading-relaxed max-w-xl">{profileData.bio}</p>}
-                  <div className="flex flex-wrap gap-3 mt-4">
+                  <div className="flex flex-wrap gap-2 mt-4">
                     {profileData.school && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-mono text-blue-400 font-black"><Icons.GraduationCap size={11} />{profileData.school}</span>}
                     {profileData.firm && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-[10px] font-mono text-purple-400 font-black"><Icons.Building2 size={11} />{profileData.firm}</span>}
                   </div>
+                  {/* Specialties display */}
+                  {profileData.specialties.length > 0 && (
+                    <div className="mt-5">
+                      <p className="text-[9px] font-mono text-gray-600 uppercase font-black mb-2 flex items-center gap-1"><Icons.Cpu size={9} /> Specialties</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profileData.specialties.map(s => <span key={s} className="px-2.5 py-1 bg-architectural-yellow/10 border border-architectural-yellow/20 rounded-lg text-[10px] font-mono text-architectural-yellow font-black">{s}</span>)}
+                      </div>
+                    </div>
+                  )}
+                  {/* Design preferences display */}
+                  {profileData.designPreferences.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-[9px] font-mono text-gray-600 uppercase font-black mb-2 flex items-center gap-1"><Icons.Palette size={9} /> Design Preferences</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profileData.designPreferences.map(d => <span key={d} className="px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[10px] font-mono text-blue-400 font-black">{d}</span>)}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1248,47 +1360,24 @@ export default function App() {
                   <p className="text-[10px] font-mono text-gray-600 uppercase">{totalXP} XP total · {levelInfo.xpInLevel} / {levelInfo.xpNeeded || '∞'} XP this level</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] font-mono text-gray-600 uppercase mb-1">{levelInfo.level < 10 ? `Next: ${levelInfo.title.split(' ').slice(-1)[0] === getLevelInfo(levelInfo.nextXP).title.split(' ').slice(-1)[0] ? 'Max Level' : getLevelInfo(levelInfo.nextXP).title}` : 'MAX LEVEL'}</p>
-                  <p className="text-xs font-mono text-gray-500">{levelInfo.level < 10 ? `${levelInfo.nextXP - totalXP} XP to go` : 'Legendary'}</p>
+                  <p className="text-xs font-mono text-gray-500">{levelInfo.level < 10 ? `${levelInfo.nextXP - totalXP} XP to next level` : 'Legendary'}</p>
                 </div>
               </div>
               <div className="relative h-4 bg-white/5 rounded-full overflow-hidden shadow-inner">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${levelInfo.progress}%` }}
-                  transition={{ duration: 1.2, ease: 'easeOut' }}
-                  className="h-full rounded-full bg-gradient-to-r from-architectural-yellow via-yellow-400 to-amber-300 shadow-[0_0_12px_rgba(244,180,0,0.5)]"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[9px] font-black font-mono text-black/70 uppercase tracking-widest drop-shadow">{levelInfo.progress}%</span>
-                </div>
+                <motion.div initial={{ width: 0 }} animate={{ width: `${levelInfo.progress}%` }} transition={{ duration: 1.2, ease: 'easeOut' }} className="h-full rounded-full bg-gradient-to-r from-architectural-yellow via-yellow-400 to-amber-300 shadow-[0_0_12px_rgba(244,180,0,0.5)]" />
+                <div className="absolute inset-0 flex items-center justify-center"><span className="text-[9px] font-black font-mono text-black/70 uppercase tracking-widest drop-shadow">{levelInfo.progress}%</span></div>
               </div>
-              {/* Level milestones */}
               <div className="flex justify-between text-[8px] font-mono text-gray-700 uppercase font-black px-1">
-                {['1','2','3','4','5','6','7','8','9','10'].map(l => (
-                  <span key={l} className={parseInt(l) <= levelInfo.level ? 'text-architectural-yellow' : ''}>{l}</span>
-                ))}
+                {['1','2','3','4','5','6','7','8','9','10'].map(l => <span key={l} className={parseInt(l) <= levelInfo.level ? 'text-architectural-yellow' : ''}>{l}</span>)}
               </div>
             </div>
 
-            {/* STATS GRID */}
+            {/* STATS */}
             <div className="grid grid-cols-4 gap-6">
-              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center">
-                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Total XP</span>
-                <span className="text-3xl font-black text-architectural-yellow">{totalXP}</span>
-              </div>
-              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center">
-                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Points Earned</span>
-                <span className="text-3xl font-black text-white">{totalPoints.toLocaleString()}</span>
-              </div>
-              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center">
-                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Lodgments</span>
-                <span className="text-3xl font-black text-white">{submittedIds.length}<span className="text-gray-700 text-xl"> / {projects.length}</span></span>
-              </div>
-              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center">
-                <span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Active</span>
-                <span className="text-3xl font-black text-blue-400">{Object.keys(acceptedData).filter(id => !submittedIds.includes(id)).length}</span>
-              </div>
+              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center"><span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Total XP</span><span className="text-3xl font-black text-architectural-yellow">{totalXP}</span></div>
+              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center"><span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Points</span><span className="text-3xl font-black text-white">{totalPoints.toLocaleString()}</span></div>
+              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center"><span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Lodgments</span><span className="text-3xl font-black text-white">{submittedIds.length}<span className="text-gray-700 text-xl"> / {projects.length}</span></span></div>
+              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-center"><span className="text-[10px] font-mono text-gray-500 uppercase font-black block mb-3">Active</span><span className="text-3xl font-black text-blue-400">{Object.keys(acceptedData).filter(id => !submittedIds.includes(id)).length}</span></div>
             </div>
 
             {/* COMPLETED SETS */}
@@ -1298,14 +1387,8 @@ export default function App() {
                 {projects.filter(p => submittedIds.includes(p.id)).map(p => (
                   <div key={`lodged-${p.id}`} className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-[2rem] flex flex-col gap-3">
                     <div className="flex items-start justify-between">
-                      <div>
-                        <span className="font-mono text-[9px] text-emerald-400 uppercase font-black">{p.plateNumber}</span>
-                        <h4 className="font-bold text-base text-white mt-0.5">{p.title}</h4>
-                      </div>
-                      <div className="text-right shrink-0 ml-3">
-                        <p className="text-architectural-yellow font-black text-sm flex items-center gap-1 justify-end"><Icons.Star size={10} fill="currentColor" />{(p as any).points}</p>
-                        <p className="text-[9px] font-mono text-gray-500">+{(p as any).xp} XP</p>
-                      </div>
+                      <div><span className="font-mono text-[9px] text-emerald-400 uppercase font-black">{p.plateNumber}</span><h4 className="font-bold text-base text-white mt-0.5">{p.title}</h4></div>
+                      <div className="text-right shrink-0 ml-3"><p className="text-architectural-yellow font-black text-sm flex items-center gap-1 justify-end"><Icons.Star size={10} fill="currentColor" />{(p as any).points}</p><p className="text-[9px] font-mono text-blue-400 flex items-center gap-1 justify-end"><Icons.Zap size={9} />+{(p as any).xp} XP</p></div>
                     </div>
                     <div className="flex flex-wrap gap-1.5">{p.software.slice(0, 3).map(s => <SoftwareBadge key={s} s={s} />)}</div>
                   </div>
@@ -1318,6 +1401,85 @@ export default function App() {
                 )}
               </div>
             </section>
+
+            </>) : (<>
+
+            {/* FRIENDS / STUDIO PEERS TAB */}
+            <div className="grid grid-cols-2 gap-8">
+
+              {/* Your Friend Code */}
+              <div className="p-8 bg-white/[0.02] border border-white/10 rounded-[2rem] space-y-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2"><Icons.QrCode size={16} className="text-architectural-yellow" /> Your Peer Code</h3>
+                <p className="text-[10px] font-mono text-gray-500">Share this code with your classmates so they can add you to their peers list.</p>
+                <div className="flex items-center gap-3 p-4 bg-black/40 border border-white/10 rounded-2xl">
+                  <span className="flex-1 text-architectural-yellow font-black font-mono text-base tracking-widest">{friendCode}</span>
+                  <button onClick={() => navigator.clipboard.writeText(friendCode)} className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all" title="Copy code">
+                    <Icons.Copy size={14} className="text-gray-400" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Add a Peer */}
+              <div className="p-8 bg-white/[0.02] border border-white/10 rounded-[2rem] space-y-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2"><Icons.UserPlus size={16} className="text-blue-400" /> Add a Peer</h3>
+                <p className="text-[10px] font-mono text-gray-500">Enter your classmate's peer code to add them to your studio network.</p>
+                <div className="flex gap-2">
+                  <input
+                    value={friendCodeInput}
+                    onChange={e => { setFriendCodeInput(e.target.value.toUpperCase()); setAddFriendError(''); }}
+                    placeholder="ARCH-XXXX-XXXX"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none uppercase tracking-widest transition-all"
+                  />
+                  <button onClick={handleAddFriend} className="px-4 py-2.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 font-black rounded-xl text-xs font-mono uppercase hover:bg-blue-500/30 transition-all">Add</button>
+                </div>
+                {addFriendError && <p className="text-[10px] font-mono text-red-400">{addFriendError}</p>}
+              </div>
+            </div>
+
+            {/* Peers List */}
+            <section>
+              <h2 className="text-xs font-mono uppercase font-black tracking-[0.4em] text-gray-600 mb-6 border-b border-white/5 pb-4 flex items-center gap-2">
+                <Icons.Users size={12} /> Studio Network — {friends.length} {friends.length === 1 ? 'Peer' : 'Peers'}
+              </h2>
+              {friends.length === 0 ? (
+                <div className="py-24 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-[3rem]">
+                  <Icons.Users size={48} className="mx-auto text-gray-800 mb-4" />
+                  <p className="text-gray-600 font-mono text-[10px] uppercase font-black">No peers added yet</p>
+                  <p className="text-gray-700 font-mono text-[9px] uppercase mt-2">Share your peer code with classmates to connect</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {friends.map(f => (
+                    <div key={f.id} className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] flex flex-col gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-architectural-yellow/20 border border-architectural-yellow/20 flex items-center justify-center shrink-0 overflow-hidden">
+                          {f.avatarUrl ? <img src={f.avatarUrl} className="w-full h-full object-cover" alt={f.name} /> : <span className="text-architectural-yellow font-black text-lg">{f.name[0]?.toUpperCase() || '?'}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-black text-white text-sm truncate">{f.name}</p>
+                          <p className="text-[9px] font-mono text-gray-500 uppercase truncate">{f.title}</p>
+                        </div>
+                        <button onClick={() => setFriends(prev => prev.filter(p => p.id !== f.id))} className="p-1.5 hover:bg-red-500/10 rounded-lg transition-all shrink-0" title="Remove peer">
+                          <Icons.UserMinus size={13} className="text-gray-600 hover:text-red-400" />
+                        </button>
+                      </div>
+                      <div className="space-y-1.5 text-[9px] font-mono">
+                        {f.school && <p className="text-blue-400 flex items-center gap-1.5"><Icons.GraduationCap size={9} />{f.school}</p>}
+                        {f.firm && <p className="text-purple-400 flex items-center gap-1.5"><Icons.Building2 size={9} />{f.firm}</p>}
+                        <p className="text-gray-600 flex items-center gap-1.5"><Icons.Hash size={9} />{f.id}</p>
+                      </div>
+                      {f.specialties.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {f.specialties.slice(0, 4).map(s => <span key={s} className="px-2 py-0.5 bg-architectural-yellow/10 border border-architectural-yellow/20 rounded-lg text-[8px] font-mono text-architectural-yellow font-black">{s}</span>)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            </>)}
           </motion.section>
         ) : null}
       </main>
