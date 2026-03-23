@@ -516,6 +516,7 @@ const DAILY_CHALLENGES: DailyChallenge[] = [
 export default function App() {
   const { user } = useUser();
   const [currentView, setCurrentView] = useState<'dashboard' | 'calendar' | 'gantt' | 'profile' | 'friends'>('dashboard');
+  const [profileTab, setProfileTab] = useState<'profile' | 'friends' | 'collab'>('profile');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
   // Convex queries
@@ -524,7 +525,12 @@ export default function App() {
   const journalData = useQuery(api.journal.getJournalEntries, user?.id ? { clerkId: user.id } : "skip");
   const challengeData = useQuery(api.challenges.getChallengeProgress, user?.id ? { clerkId: user.id } : "skip");
   const friendsData = useQuery(api.friends.getFriends, user?.id ? { clerkId: user.id } : "skip");
-  
+  // COLLAB QUERIES — uncomment after running: npx convex dev (with collaborations.ts in convex/)
+  // const invitationsSent = useQuery(api.collaborations.getInvitationsSent, user?.id && profileTab === 'collab' ? { clerkId: user.id } : "skip");
+  // const invitationsReceived = useQuery(api.collaborations.getInvitationsReceived, user?.id && profileTab === 'collab' ? { clerkId: user.id } : "skip");
+  const invitationsSent: any[] = [];
+  const invitationsReceived: any[] = [];
+
   // Convex mutations
   const acceptProjectMutation = useMutation(api.projects.acceptProject);
   const discardProjectMutation = useMutation(api.projects.discardProject);
@@ -538,6 +544,15 @@ export default function App() {
   const abandonChallengeMutation = useMutation(api.challenges.abandonChallenge);
   const addFriendMutation = useMutation(api.friends.addFriend);
   const removeFriendMutation = useMutation(api.friends.removeFriend);
+  // COLLAB MUTATIONS — uncomment after deploying collaborations.ts
+  // const sendInvitationMutation = useMutation(api.collaborations.sendInvitation);
+  // const acceptInvitationMutation = useMutation(api.collaborations.acceptInvitation);
+  // const declineInvitationMutation = useMutation(api.collaborations.declineInvitation);
+  // const cancelInvitationMutation = useMutation(api.collaborations.cancelInvitation);
+  const sendInvitationMutation = async (_args: any) => {};
+  const acceptInvitationMutation = async (_args: any) => {};
+  const declineInvitationMutation = async (_args: any) => {};
+  const cancelInvitationMutation = async (_args: any) => {};
 
   // Derived state from Convex data
   const acceptedData = useMemo(() => projectsData?.accepted || {}, [projectsData]);
@@ -595,7 +610,12 @@ export default function App() {
   
   const [friendCodeInput, setFriendCodeInput] = useState('');
   const [addFriendError, setAddFriendError] = useState('');
-  const [profileTab, setProfileTab] = useState<'profile' | 'friends'>('profile');
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteProjectId, setInviteProjectId] = useState<string | null>(null);
+  const [inviteRecipientCode, setInviteRecipientCode] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSending, setInviteSending] = useState(false);
   const [globalTime, setGlobalTime] = useState(Date.now());
   const [filter, setFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
@@ -1321,7 +1341,7 @@ export default function App() {
         ) : currentView === 'profile' ? (
           <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
 
-            {/* Profile / Friends Tab Switch */}
+            {/* Profile / Friends / Collab Tab Switch */}
             <div className="flex gap-2 p-1.5 bg-white/5 border border-white/10 rounded-2xl w-fit">
               <button onClick={() => setProfileTab('profile')} className={cn("px-6 py-2.5 rounded-xl text-xs font-mono uppercase font-black transition-all", profileTab === 'profile' ? "bg-white/10 text-white shadow-inner" : "text-gray-500 hover:text-gray-300")}>
                 <span className="flex items-center gap-2"><Icons.User size={13} />My Profile</span>
@@ -1329,6 +1349,14 @@ export default function App() {
               <button onClick={() => setProfileTab('friends')} className={cn("px-6 py-2.5 rounded-xl text-xs font-mono uppercase font-black transition-all flex items-center gap-2", profileTab === 'friends' ? "bg-white/10 text-white shadow-inner" : "text-gray-500 hover:text-gray-300")}>
                 <Icons.Users size={13} />Studio Peers
                 {friends.length > 0 && <span className="bg-architectural-yellow text-black text-[8px] font-black px-1.5 py-0.5 rounded-full">{friends.length}</span>}
+              </button>
+              <button onClick={() => setProfileTab('collab')} className={cn("px-6 py-2.5 rounded-xl text-xs font-mono uppercase font-black transition-all flex items-center gap-2", profileTab === 'collab' ? "bg-white/10 text-white shadow-inner" : "text-gray-500 hover:text-gray-300")}>
+                <Icons.Handshake size={13} />Collabs
+                {((invitationsReceived as any[]) || []).filter((inv: any) => inv.status === 'pending').length > 0 && (
+                  <span className="bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                    {((invitationsReceived as any[]) || []).filter((inv: any) => inv.status === 'pending').length}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -1576,6 +1604,154 @@ export default function App() {
                 </div>
               )}
             </section>
+
+            </>)}
+
+            {profileTab === 'collab' && (<>
+
+            {/* COLLABORATION TAB */}
+            <div className="grid grid-cols-2 gap-8">
+
+              {/* Incoming Invitations */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
+                  <Icons.MailOpen size={16} className="text-architectural-yellow" />
+                  Incoming Invitations
+                  {((invitationsReceived as any[]) || []).filter((i: any) => i.status === 'pending').length > 0 && (
+                    <span className="bg-red-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">
+                      {((invitationsReceived as any[]) || []).filter((i: any) => i.status === 'pending').length} new
+                    </span>
+                  )}
+                </h3>
+
+                {((invitationsReceived as any[]) || []).length === 0 ? (
+                  <div className="py-12 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-[2rem]">
+                    <Icons.MailOpen size={32} className="mx-auto text-gray-800 mb-3" />
+                    <p className="text-gray-700 font-mono text-[9px] uppercase font-black">No invitations yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {((invitationsReceived as any[]) || []).map((inv: any) => (
+                      <div key={inv._id} className={cn("p-5 rounded-2xl border space-y-3", inv.status === 'pending' ? "bg-blue-500/5 border-blue-500/20" : inv.status === 'accepted' ? "bg-emerald-500/5 border-emerald-500/20" : "bg-white/[0.02] border-white/5")}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[9px] font-mono text-gray-500 uppercase font-black mb-1">Project Collaboration</p>
+                            <p className="text-sm font-black text-white">{inv.projectTitle}</p>
+                            <p className="text-[10px] font-mono text-gray-500 mt-1">From: <span className="text-gray-300">{inv.senderName}</span></p>
+                          </div>
+                          <span className={cn("text-[8px] font-mono px-2 py-0.5 rounded-full border font-black uppercase shrink-0",
+                            inv.status === 'pending' ? "text-blue-400 border-blue-400/20 bg-blue-400/5" :
+                            inv.status === 'accepted' ? "text-emerald-400 border-emerald-400/20 bg-emerald-400/5" :
+                            "text-gray-500 border-gray-500/20 bg-gray-500/5"
+                          )}>{inv.status}</span>
+                        </div>
+                        {inv.message && <p className="text-[11px] font-mono text-gray-400 italic border-l-2 border-white/10 pl-3">"{inv.message}"</p>}
+                        <p className="text-[9px] font-mono text-gray-600">{new Date(inv.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        {inv.status === 'pending' && (
+                          <div className="flex gap-2 pt-1">
+                            <button onClick={async () => {
+                              if (user?.id) await acceptInvitationMutation({ clerkId: user.id, invitationId: inv._id });
+                            }} className="flex-1 py-2.5 bg-emerald-600 text-white font-black rounded-xl text-[10px] font-mono uppercase hover:bg-emerald-500 transition-all">
+                              Accept
+                            </button>
+                            <button onClick={async () => {
+                              if (user?.id) await declineInvitationMutation({ clerkId: user.id, invitationId: inv._id });
+                            }} className="flex-1 py-2.5 bg-white/5 border border-white/10 text-gray-400 font-black rounded-xl text-[10px] font-mono uppercase hover:bg-red-500/10 hover:text-red-400 transition-all">
+                              Decline
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Sent Invitations */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
+                  <Icons.Send size={14} className="text-blue-400" />
+                  Sent Invitations
+                </h3>
+
+                {/* Send new invite */}
+                <div className="p-5 bg-white/[0.02] border border-white/10 rounded-2xl space-y-3">
+                  <p className="text-[9px] font-mono text-gray-500 uppercase font-black">Invite a Peer to Collaborate</p>
+                  <div>
+                    <label className="text-[8px] font-mono text-gray-600 uppercase font-black block mb-1">Peer Code</label>
+                    <input value={inviteRecipientCode} onChange={e => { setInviteRecipientCode(e.target.value.toUpperCase()); setInviteError(''); }} placeholder="ARCH-XXXX-XXXX" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white focus:border-architectural-yellow outline-none uppercase tracking-widest transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-[8px] font-mono text-gray-600 uppercase font-black block mb-1">Project</label>
+                    <div className="relative">
+                      <select value={inviteProjectId || ''} onChange={e => setInviteProjectId(e.target.value)} className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-gray-300 focus:border-architectural-yellow outline-none cursor-pointer pr-7 transition-all">
+                        <option value="" className="bg-[#0f1115]">Select a project...</option>
+                        {projects.filter(p => acceptedData[p.id] && !submittedIds.includes(p.id)).map(p => (
+                          <option key={p.id} value={p.id} className="bg-[#0f1115]">{p.plateNumber} — {p.title}</option>
+                        ))}
+                      </select>
+                      <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[8px] font-mono text-gray-600 uppercase font-black block mb-1">Message (optional)</label>
+                    <input value={inviteMessage} onChange={e => setInviteMessage(e.target.value)} placeholder="Let's work on this together..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
+                  </div>
+                  {inviteError && <p className="text-[10px] font-mono text-red-400">{inviteError}</p>}
+                  <button onClick={async () => {
+                    if (!inviteRecipientCode.trim()) { setInviteError('Enter a peer code.'); return; }
+                    if (!inviteProjectId) { setInviteError('Select a project.'); return; }
+                    if (!user?.id) return;
+                    setInviteSending(true);
+                    try {
+                      const project = projects.find(p => p.id === inviteProjectId);
+                      await sendInvitationMutation({
+                        clerkId: user.id,
+                        recipientCode: inviteRecipientCode.trim(),
+                        projectId: inviteProjectId,
+                        projectTitle: project?.title || '',
+                        message: inviteMessage,
+                      });
+                      setInviteRecipientCode('');
+                      setInviteProjectId(null);
+                      setInviteMessage('');
+                    } catch { setInviteError('Failed to send. Check the peer code.'); }
+                    setInviteSending(false);
+                  }} disabled={inviteSending} className="w-full py-2.5 bg-architectural-yellow text-black font-black rounded-xl text-[10px] font-mono uppercase hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    {inviteSending ? <><Icons.Loader size={12} className="animate-spin" /> Sending...</> : <><Icons.Send size={12} /> Send Invitation</>}
+                  </button>
+                </div>
+
+                {/* Sent list */}
+                {((invitationsSent as any[]) || []).length > 0 && (
+                  <div className="space-y-3">
+                    {((invitationsSent as any[]) || []).map((inv: any) => (
+                      <div key={inv._id} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs font-black text-white truncate">{inv.projectTitle}</p>
+                          <p className="text-[9px] font-mono text-gray-500 mt-0.5">To: <span className="text-gray-400">{inv.recipientCode}</span></p>
+                          <p className="text-[9px] font-mono text-gray-600 mt-0.5">{new Date(inv.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={cn("text-[8px] font-mono px-2 py-0.5 rounded-full border font-black uppercase",
+                            inv.status === 'pending' ? "text-yellow-400 border-yellow-400/20 bg-yellow-400/5" :
+                            inv.status === 'accepted' ? "text-emerald-400 border-emerald-400/20 bg-emerald-400/5" :
+                            "text-gray-500 border-gray-500/20 bg-gray-500/5"
+                          )}>{inv.status}</span>
+                          {inv.status === 'pending' && (
+                            <button onClick={async () => {
+                              if (user?.id) await cancelInvitationMutation({ clerkId: user.id, invitationId: inv._id });
+                            }} className="p-1 hover:bg-red-500/10 rounded-lg transition-all" title="Cancel invitation">
+                              <Icons.X size={12} className="text-gray-600 hover:text-red-400" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
 
             </>)}
           </motion.section>
@@ -1863,6 +2039,15 @@ export default function App() {
                     </div>
 
                     <div className="flex flex-col gap-3 shrink-0">
+                      {/* Invite Peers to Collaborate */}
+                      <button onClick={() => {
+                        setInviteProjectId(selectedProject.id);
+                        setCurrentView('profile');
+                        setProfileTab('collab');
+                        setSelectedProject(null);
+                      }} className="w-full py-3 border border-blue-500/30 bg-blue-500/5 text-blue-400 font-black rounded-[2rem] uppercase text-xs tracking-[0.2em] hover:bg-blue-500/15 hover:border-blue-500/50 transition-all pointer-events-auto flex items-center justify-center gap-2">
+                        <Icons.Handshake size={14} /> Invite Peers to Collaborate
+                      </button>
                       <button onClick={async () => {
                         if (user?.id && selectedProject) {
                           await submitProjectMutation({
