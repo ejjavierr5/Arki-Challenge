@@ -610,7 +610,6 @@ export default function App() {
   
   const [friendCodeInput, setFriendCodeInput] = useState('');
   const [addFriendError, setAddFriendError] = useState('');
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteProjectId, setInviteProjectId] = useState<string | null>(null);
   const [inviteRecipientCode, setInviteRecipientCode] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
@@ -1111,69 +1110,6 @@ export default function App() {
               </div>
             </div>
           )}
-            <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest font-black flex items-center gap-1.5"><Icons.Filter size={9} /> Filters</p>
-
-            {/* Category */}
-            <div>
-              <label className="text-[8px] font-mono text-gray-700 uppercase font-black block mb-1">Category</label>
-              <div className="relative">
-                <select
-                  value={filter}
-                  onChange={e => { setFilter(e.target.value); setCurrentView('dashboard'); }}
-                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-gray-300 uppercase focus:border-architectural-yellow outline-none cursor-pointer hover:bg-white/10 transition-all pr-7"
-                >
-                  {['all', 'residential', 'commercial', 'industrial', 'institutional', 'infrastructure', 'high-rise'].map(c => (
-                    <option key={c} value={c} className="bg-[#0f1115] text-gray-300">{c === 'all' ? 'All Categories' : c}</option>
-                  ))}
-                </select>
-                <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Difficulty */}
-            <div>
-              <label className="text-[8px] font-mono text-gray-700 uppercase font-black block mb-1">Difficulty</label>
-              <div className="relative">
-                <select
-                  value={difficultyFilter}
-                  onChange={e => { setDifficultyFilter(e.target.value); setCurrentView('dashboard'); }}
-                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-gray-300 uppercase focus:border-architectural-yellow outline-none cursor-pointer hover:bg-white/10 transition-all pr-7"
-                >
-                  <option value="all" className="bg-[#0f1115]">All Levels</option>
-                  <option value="Easy" className="bg-[#0f1115]">Easy</option>
-                  <option value="Medium" className="bg-[#0f1115]">Medium</option>
-                  <option value="Hard" className="bg-[#0f1115]">Hard</option>
-                  <option value="Master" className="bg-[#0f1115]">Master</option>
-                </select>
-                <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className="text-[8px] font-mono text-gray-700 uppercase font-black block mb-1">Status</label>
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={e => { setStatusFilter(e.target.value); setCurrentView('dashboard'); }}
-                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-gray-300 uppercase focus:border-architectural-yellow outline-none cursor-pointer hover:bg-white/10 transition-all pr-7"
-                >
-                  <option value="all" className="bg-[#0f1115]">All Projects</option>
-                  <option value="open" className="bg-[#0f1115]">Open</option>
-                  <option value="active" className="bg-[#0f1115]">In Production</option>
-                  <option value="submitted" className="bg-[#0f1115]">Submitted</option>
-                </select>
-                <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Clear button */}
-            {(filter !== 'all' || difficultyFilter !== 'all' || statusFilter !== 'all') && (
-              <button onClick={() => { setFilter('all'); setDifficultyFilter('all'); setStatusFilter('all'); }} className="w-full py-2 text-[9px] font-mono text-red-500/60 uppercase font-black hover:text-red-400 transition-all flex items-center justify-center gap-1.5">
-                <Icons.X size={9} /> Clear Filters
-              </button>
-            )}
-          </div>
         </nav>
         <div className="mt-8 space-y-2">
           <button onClick={handleAuth} className="w-full py-3 border border-white/10 rounded-lg font-mono text-[10px] uppercase hover:bg-architectural-yellow hover:text-black transition-all font-bold tracking-widest">
