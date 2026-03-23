@@ -515,7 +515,7 @@ const DAILY_CHALLENGES: DailyChallenge[] = [
 
 export default function App() {
   const { user } = useUser();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'calendar' | 'gantt' | 'profile' | 'friends'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'calendar' | 'gantt' | 'profile' | 'friends' | 'peers' | 'collab'>('dashboard');
   const [profileTab, setProfileTab] = useState<'profile' | 'friends' | 'collab'>('profile');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
@@ -1012,8 +1012,105 @@ export default function App() {
           <button onClick={() => setCurrentView('calendar')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'calendar' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.Calendar size={16} /> Calendar</button>
           <button onClick={() => setCurrentView('gantt')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'gantt' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.GanttChart size={16} /> Gantt Chart</button>
           <button onClick={() => setCurrentView('profile')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'profile' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.User size={16} /> Profile</button>
+          <button onClick={() => setCurrentView('peers')} className={cn("w-full flex items-center justify-between p-3 rounded-lg text-xs font-mono transition-all", currentView === 'peers' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}>
+            <span className="flex items-center gap-3"><Icons.Users size={16} /> Studio Peers</span>
+            {friends.length > 0 && <span className="bg-white/10 text-gray-400 text-[8px] font-black px-1.5 py-0.5 rounded-full">{friends.length}</span>}
+          </button>
+          <button onClick={() => setCurrentView('collab')} className={cn("w-full flex items-center justify-between p-3 rounded-lg text-xs font-mono transition-all", currentView === 'collab' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}>
+            <span className="flex items-center gap-3"><Icons.Handshake size={16} /> Collaborations</span>
+            {invitationsReceived.filter((i: any) => i.status === 'pending').length > 0 && (
+              <span className="bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">{invitationsReceived.filter((i: any) => i.status === 'pending').length}</span>
+            )}
+          </button>
 
           <div className="pt-6 border-t border-white/5 space-y-3">
+            <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest font-black flex items-center gap-1.5"><Icons.Filter size={9} /> Filters</p>
+
+            {/* Category */}
+            <div>
+              <label className="text-[8px] font-mono text-gray-700 uppercase font-black block mb-1">Category</label>
+              <div className="relative">
+                <select
+                  value={filter}
+                  onChange={e => { setFilter(e.target.value); setCurrentView('dashboard'); }}
+                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-gray-300 uppercase focus:border-architectural-yellow outline-none cursor-pointer hover:bg-white/10 transition-all pr-7"
+                >
+                  {['all', 'residential', 'commercial', 'industrial', 'institutional', 'infrastructure', 'high-rise'].map(c => (
+                    <option key={c} value={c} className="bg-[#0f1115] text-gray-300">{c === 'all' ? 'All Categories' : c}</option>
+                  ))}
+                </select>
+                <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Difficulty */}
+            <div>
+              <label className="text-[8px] font-mono text-gray-700 uppercase font-black block mb-1">Difficulty</label>
+              <div className="relative">
+                <select
+                  value={difficultyFilter}
+                  onChange={e => { setDifficultyFilter(e.target.value); setCurrentView('dashboard'); }}
+                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-gray-300 uppercase focus:border-architectural-yellow outline-none cursor-pointer hover:bg-white/10 transition-all pr-7"
+                >
+                  <option value="all" className="bg-[#0f1115]">All Levels</option>
+                  <option value="Easy" className="bg-[#0f1115]">Easy</option>
+                  <option value="Medium" className="bg-[#0f1115]">Medium</option>
+                  <option value="Hard" className="bg-[#0f1115]">Hard</option>
+                  <option value="Master" className="bg-[#0f1115]">Master</option>
+                </select>
+                <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="text-[8px] font-mono text-gray-700 uppercase font-black block mb-1">Status</label>
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={e => { setStatusFilter(e.target.value); setCurrentView('dashboard'); }}
+                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-gray-300 uppercase focus:border-architectural-yellow outline-none cursor-pointer hover:bg-white/10 transition-all pr-7"
+                >
+                  <option value="all" className="bg-[#0f1115]">All Projects</option>
+                  <option value="open" className="bg-[#0f1115]">Open</option>
+                  <option value="active" className="bg-[#0f1115]">In Production</option>
+                  <option value="submitted" className="bg-[#0f1115]">Submitted</option>
+                </select>
+                <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Clear button */}
+            {(filter !== 'all' || difficultyFilter !== 'all' || statusFilter !== 'all') && (
+              <button onClick={() => { setFilter('all'); setDifficultyFilter('all'); setStatusFilter('all'); }} className="w-full py-2 text-[9px] font-mono text-red-500/60 uppercase font-black hover:text-red-400 transition-all flex items-center justify-center gap-1.5">
+                <Icons.X size={9} /> Clear Filters
+              </button>
+            )}
+          </div>
+
+          {/* PEERS MINI LIST */}
+          {friends.length > 0 && (
+            <div className="pt-4 border-t border-white/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest font-black flex items-center gap-1.5"><Icons.Users size={9} /> Peers</p>
+                <button onClick={() => setCurrentView('peers')} className="text-[8px] font-mono text-gray-600 hover:text-architectural-yellow transition-colors uppercase font-black">See all</button>
+              </div>
+              <div className="space-y-1.5">
+                {friends.slice(0, 4).map((f: any) => (
+                  <div key={f.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 transition-all cursor-default">
+                    <div className="w-7 h-7 rounded-lg bg-architectural-yellow/20 border border-architectural-yellow/10 flex items-center justify-center shrink-0 overflow-hidden">
+                      {f.avatarUrl ? <img src={f.avatarUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-architectural-yellow font-black text-[10px]">{f.name?.[0]?.toUpperCase() || '?'}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-gray-300 truncate">{f.name || 'Peer'}</p>
+                      <p className="text-[8px] font-mono text-gray-600 truncate">{f.school || f.firm || f.title || ''}</p>
+                    </div>
+                  </div>
+                ))}
+                {friends.length > 4 && <p className="text-[8px] font-mono text-gray-700 text-center uppercase font-black">+{friends.length - 4} more</p>}
+              </div>
+            </div>
+          )}
             <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest font-black flex items-center gap-1.5"><Icons.Filter size={9} /> Filters</p>
 
             {/* Category */}
@@ -1755,6 +1852,209 @@ export default function App() {
 
             </>)}
           </motion.section>
+        ) : currentView === 'peers' ? (
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+            <header className="border-b border-white/5 pb-8">
+              <h1 className="text-4xl font-bold uppercase tracking-tighter text-white">Studio Peers</h1>
+              <p className="text-gray-500 font-mono text-[10px] uppercase tracking-widest mt-1">{friends.length} {friends.length === 1 ? 'peer' : 'peers'} in your network</p>
+            </header>
+
+            {/* Your Code */}
+            <div className="flex items-center gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+              <Icons.QrCode size={20} className="text-architectural-yellow shrink-0" />
+              <div className="flex-1">
+                <p className="text-[9px] font-mono text-gray-500 uppercase font-black mb-1">Your Peer Code — share this with classmates</p>
+                <p className="text-architectural-yellow font-black font-mono text-lg tracking-widest">{friendCode}</p>
+              </div>
+              <button onClick={() => navigator.clipboard.writeText(friendCode)} className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
+                <Icons.Copy size={14} className="text-gray-400" />
+              </button>
+            </div>
+
+            {/* Add peer */}
+            <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl space-y-3">
+              <p className="text-[9px] font-mono text-gray-500 uppercase font-black flex items-center gap-2"><Icons.UserPlus size={12} className="text-blue-400" /> Add a Peer</p>
+              <div className="flex gap-2">
+                <input value={friendCodeInput} onChange={e => { setFriendCodeInput(e.target.value.toUpperCase()); setAddFriendError(''); }} placeholder="ARCH-XXXX-XXXX" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none uppercase tracking-widest transition-all" />
+                <button onClick={async () => {
+                  const code = friendCodeInput.trim().toUpperCase();
+                  setAddFriendError('');
+                  if (!code) { setAddFriendError('Enter a peer code.'); return; }
+                  if (code === friendCode) { setAddFriendError("That's your own code!"); return; }
+                  if (!user?.id) return;
+                  try {
+                    await addFriendMutation({ clerkId: user.id, friendCode: code });
+                    setFriendCodeInput('');
+                  } catch { setAddFriendError('Peer not found. Check the code.'); }
+                }} className="px-5 py-2.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 font-black rounded-xl text-xs font-mono uppercase hover:bg-blue-500/30 transition-all">Add</button>
+              </div>
+              {addFriendError && <p className="text-[10px] font-mono text-red-400">{addFriendError}</p>}
+            </div>
+
+            {/* Peers grid */}
+            {friends.length === 0 ? (
+              <div className="py-24 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-[3rem]">
+                <Icons.Users size={48} className="mx-auto text-gray-800 mb-4" />
+                <p className="text-gray-600 font-mono text-[10px] uppercase font-black">No peers yet — share your code to connect</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {friends.map((f: any) => (
+                  <div key={f.id} className="p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] flex flex-col gap-4 hover:bg-white/[0.03] transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-architectural-yellow/20 border border-architectural-yellow/20 flex items-center justify-center shrink-0 overflow-hidden">
+                        {f.avatarUrl ? <img src={f.avatarUrl} className="w-full h-full object-cover" alt={f.name} /> : <span className="text-architectural-yellow font-black text-lg">{f.name?.[0]?.toUpperCase() || '?'}</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-white text-sm truncate">{f.name || 'Studio Peer'}</p>
+                        <p className="text-[9px] font-mono text-gray-500 uppercase truncate">{f.title || 'Architect'}</p>
+                      </div>
+                      <button onClick={async () => { if (user?.id) { try { await removeFriendMutation({ clerkId: user.id, friendCode: f.id }); } catch {} } }} className="p-1.5 hover:bg-red-500/10 rounded-lg transition-all shrink-0">
+                        <Icons.UserMinus size={13} className="text-gray-600 hover:text-red-400" />
+                      </button>
+                    </div>
+                    <div className="space-y-1 text-[9px] font-mono">
+                      {f.school && <p className="text-blue-400 flex items-center gap-1.5"><Icons.GraduationCap size={9} />{f.school}</p>}
+                      {f.firm && <p className="text-purple-400 flex items-center gap-1.5"><Icons.Building2 size={9} />{f.firm}</p>}
+                      <p className="text-gray-600 flex items-center gap-1.5"><Icons.Hash size={9} />{f.id}</p>
+                    </div>
+                    {(f.specialties || []).length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {f.specialties.slice(0, 4).map((s: string) => <span key={s} className="px-2 py-0.5 bg-architectural-yellow/10 border border-architectural-yellow/20 rounded-lg text-[8px] font-mono text-architectural-yellow font-black">{s}</span>)}
+                      </div>
+                    )}
+                    <button onClick={() => { setInviteProjectId(null); setInviteRecipientCode(f.id); setCurrentView('collab'); }} className="w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-mono uppercase font-black text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-1.5">
+                      <Icons.Handshake size={11} /> Invite to Collaborate
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.section>
+
+        ) : currentView === 'collab' ? (
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+            <header className="border-b border-white/5 pb-8 flex items-start justify-between">
+              <div>
+                <h1 className="text-4xl font-bold uppercase tracking-tighter text-white">Collaborations</h1>
+                <p className="text-gray-500 font-mono text-[10px] uppercase tracking-widest mt-1">Invite peers · manage joint projects</p>
+              </div>
+              {invitationsReceived.filter((i: any) => i.status === 'pending').length > 0 && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl">
+                  <span className="text-red-400 font-black text-sm">{invitationsReceived.filter((i: any) => i.status === 'pending').length}</span>
+                  <span className="text-[9px] font-mono text-red-400 uppercase font-black">pending</span>
+                </div>
+              )}
+            </header>
+
+            <div className="grid grid-cols-2 gap-8">
+
+              {/* Incoming */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2"><Icons.MailOpen size={15} className="text-architectural-yellow" /> Incoming Invitations</h3>
+                {invitationsReceived.length === 0 ? (
+                  <div className="py-16 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-[2rem]">
+                    <Icons.MailOpen size={32} className="mx-auto text-gray-800 mb-3" />
+                    <p className="text-gray-700 font-mono text-[9px] uppercase font-black">No invitations yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {invitationsReceived.map((inv: any) => (
+                      <div key={inv._id} className={cn("p-5 rounded-2xl border space-y-3", inv.status === 'pending' ? "bg-blue-500/5 border-blue-500/20" : inv.status === 'accepted' ? "bg-emerald-500/5 border-emerald-500/20" : "bg-white/[0.02] border-white/5")}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[9px] font-mono text-gray-500 uppercase font-black mb-1">Project Collab</p>
+                            <p className="text-sm font-black text-white">{inv.projectTitle}</p>
+                            <p className="text-[10px] font-mono text-gray-500 mt-1">From: <span className="text-gray-300">{inv.senderName}</span></p>
+                          </div>
+                          <span className={cn("text-[8px] font-mono px-2 py-0.5 rounded-full border font-black uppercase shrink-0",
+                            inv.status === 'pending' ? "text-blue-400 border-blue-400/20 bg-blue-400/5" :
+                            inv.status === 'accepted' ? "text-emerald-400 border-emerald-400/20 bg-emerald-400/5" :
+                            "text-gray-500 border-gray-500/20"
+                          )}>{inv.status}</span>
+                        </div>
+                        {inv.message && <p className="text-[11px] font-mono text-gray-400 italic border-l-2 border-white/10 pl-3">"{inv.message}"</p>}
+                        <p className="text-[9px] font-mono text-gray-600">{new Date(inv.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        {inv.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <button onClick={async () => { if (user?.id) await acceptInvitationMutation({ clerkId: user.id, invitationId: inv._id }); }} className="flex-1 py-2.5 bg-emerald-600 text-white font-black rounded-xl text-[10px] font-mono uppercase hover:bg-emerald-500 transition-all">Accept</button>
+                            <button onClick={async () => { if (user?.id) await declineInvitationMutation({ clerkId: user.id, invitationId: inv._id }); }} className="flex-1 py-2.5 bg-white/5 border border-white/10 text-gray-400 font-black rounded-xl text-[10px] font-mono uppercase hover:bg-red-500/10 hover:text-red-400 transition-all">Decline</button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Send + Sent */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2"><Icons.Send size={14} className="text-blue-400" /> Send an Invitation</h3>
+
+                <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl space-y-4">
+                  <div>
+                    <label className="text-[8px] font-mono text-gray-600 uppercase font-black block mb-1">Peer Code</label>
+                    <input value={inviteRecipientCode} onChange={e => { setInviteRecipientCode(e.target.value.toUpperCase()); setInviteError(''); }} placeholder="ARCH-XXXX-XXXX" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none uppercase tracking-widest transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-[8px] font-mono text-gray-600 uppercase font-black block mb-1">Project</label>
+                    <div className="relative">
+                      <select value={inviteProjectId || ''} onChange={e => setInviteProjectId(e.target.value)} className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm font-mono text-gray-300 focus:border-architectural-yellow outline-none cursor-pointer pr-7 transition-all">
+                        <option value="" className="bg-[#0f1115]">Select a project...</option>
+                        {projects.filter(p => acceptedData[p.id] && !submittedIds.includes(p.id)).map(p => (
+                          <option key={p.id} value={p.id} className="bg-[#0f1115]">{p.plateNumber} — {p.title}</option>
+                        ))}
+                      </select>
+                      <Icons.ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[8px] font-mono text-gray-600 uppercase font-black block mb-1">Message (optional)</label>
+                    <input value={inviteMessage} onChange={e => setInviteMessage(e.target.value)} placeholder="Let's work on this together..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm font-mono text-white focus:border-architectural-yellow outline-none transition-all" />
+                  </div>
+                  {inviteError && <p className="text-[10px] font-mono text-red-400">{inviteError}</p>}
+                  <button onClick={async () => {
+                    if (!inviteRecipientCode.trim()) { setInviteError('Enter a peer code.'); return; }
+                    if (!inviteProjectId) { setInviteError('Select a project.'); return; }
+                    if (!user?.id) return;
+                    setInviteSending(true);
+                    try {
+                      const project = projects.find(p => p.id === inviteProjectId);
+                      await sendInvitationMutation({ clerkId: user.id, recipientCode: inviteRecipientCode.trim(), projectId: inviteProjectId, projectTitle: project?.title || '', message: inviteMessage });
+                      setInviteRecipientCode(''); setInviteProjectId(null); setInviteMessage('');
+                    } catch { setInviteError('Failed to send. Check the peer code.'); }
+                    setInviteSending(false);
+                  }} disabled={inviteSending} className="w-full py-3 bg-architectural-yellow text-black font-black rounded-xl text-xs font-mono uppercase hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    {inviteSending ? <><Icons.Loader size={12} className="animate-spin" /> Sending...</> : <><Icons.Send size={12} /> Send Invitation</>}
+                  </button>
+                </div>
+
+                {invitationsSent.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-mono text-gray-600 uppercase font-black">Sent</p>
+                    {invitationsSent.map((inv: any) => (
+                      <div key={inv._id} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs font-black text-white truncate">{inv.projectTitle}</p>
+                          <p className="text-[9px] font-mono text-gray-500 mt-0.5">To: <span className="text-gray-400">{inv.recipientCode}</span></p>
+                          <p className="text-[9px] font-mono text-gray-600">{new Date(inv.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={cn("text-[8px] font-mono px-2 py-0.5 rounded-full border font-black uppercase",
+                            inv.status === 'pending' ? "text-yellow-400 border-yellow-400/20 bg-yellow-400/5" :
+                            inv.status === 'accepted' ? "text-emerald-400 border-emerald-400/20 bg-emerald-400/5" :
+                            "text-gray-500 border-gray-500/20"
+                          )}>{inv.status}</span>
+                          {inv.status === 'pending' && <button onClick={async () => { if (user?.id) await cancelInvitationMutation({ clerkId: user.id, invitationId: inv._id }); }} className="p-1 hover:bg-red-500/10 rounded-lg transition-all"><Icons.X size={12} className="text-gray-600 hover:text-red-400" /></button>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.section>
+
         ) : null}
       </main>
 
