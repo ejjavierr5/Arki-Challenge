@@ -19,14 +19,6 @@ const FEATURED_DESIGNS = [
   { title: "Burj Khalifa", architect: "Adrian Smith (SOM)", year: "2010", style: "Neo-Futurism", location: "Dubai, UAE", image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&auto=format&fit=crop" },
 ];
 
-// Stats for the platform
-const PLATFORM_STATS = [
-  { label: "Architecture Projects", value: "40+", icon: Icons.LayoutGrid },
-  { label: "Daily Challenges", value: "30+", icon: Icons.Zap },
-  { label: "Design Inspirations", value: "30+", icon: Icons.Sparkles },
-  { label: "Skill Levels", value: "4", icon: Icons.TrendingUp },
-];
-
 // Features list
 const FEATURES = [
   {
@@ -185,7 +177,7 @@ export default function Homepage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center pt-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-2 gap-16 items-start">
           {/* Left Content */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -240,31 +232,14 @@ export default function Homepage() {
                 <Icons.Play size={18} /> See How It Works
               </a>
             </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-white/10">
-              {PLATFORM_STATS.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + i * 0.1 }}
-                  className="text-center"
-                >
-                  <stat.icon size={20} className="mx-auto mb-2 text-architectural-yellow" />
-                  <p className="text-2xl font-black text-white">{stat.value}</p>
-                  <p className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">{stat.label}</p>
-                </motion.div>
-              ))}
-            </div>
           </motion.div>
 
-          {/* Right - Featured Design Showcase */}
+          {/* Right - Featured Design Showcase - Hidden on Mobile */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
+            className="relative lg:mt-0 hidden md:block"
           >
             <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
               <AnimatePresence mode="wait">
