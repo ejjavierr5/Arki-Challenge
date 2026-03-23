@@ -9,6 +9,7 @@
  */
 
 import type * as challenges from "../challenges.js";
+import type * as collaborations from "../collaborations.js";
 import type * as friends from "../friends.js";
 import type * as journal from "../journal.js";
 import type * as projects from "../projects.js";
@@ -22,6 +23,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   challenges: typeof challenges;
+  collaborations: typeof collaborations;
   friends: typeof friends;
   journal: typeof journal;
   projects: typeof projects;
