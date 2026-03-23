@@ -128,7 +128,7 @@ export const updateProfile = mutation({
       throw new Error("User not found");
     }
 
-    const { clerkId: _clerkId, ...updates } = args;
+    const { clerkId: _, ...updates } = args;
     await ctx.db.patch(user._id, {
       ...updates,
       updatedAt: Date.now(),

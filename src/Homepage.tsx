@@ -19,14 +19,6 @@ const FEATURED_DESIGNS = [
   { title: "Burj Khalifa", architect: "Adrian Smith (SOM)", year: "2010", style: "Neo-Futurism", location: "Dubai, UAE", image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&auto=format&fit=crop" },
 ];
 
-// Stats for the platform
-const PLATFORM_STATS = [
-  { label: "Architecture Projects", value: "40+", icon: Icons.LayoutGrid },
-  { label: "Daily Challenges", value: "30+", icon: Icons.Zap },
-  { label: "Design Inspirations", value: "30+", icon: Icons.Sparkles },
-  { label: "Skill Levels", value: "4", icon: Icons.TrendingUp },
-];
-
 // Features list
 const FEATURES = [
   {
