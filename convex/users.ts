@@ -47,7 +47,13 @@ export const upsertUser = mutation({
 
     if (existingUser) {
       // If user exists but doesn't have friendCode, generate one
-      const updates: any = {
+      const updates: {
+        email: string;
+        name: string;
+        imageUrl?: string;
+        updatedAt: number;
+        friendCode?: string;
+      } = {
         email: args.email,
         name: args.name,
         imageUrl: args.imageUrl,
@@ -122,7 +128,7 @@ export const updateProfile = mutation({
       throw new Error("User not found");
     }
 
-    const { clerkId, ...updates } = args;
+    const { clerkId: _clerkId, ...updates } = args;
     await ctx.db.patch(user._id, {
       ...updates,
       updatedAt: Date.now(),

@@ -39,7 +39,7 @@ export const getUserProjects = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
-    const uploadedFiles: Record<string, Record<string, any>> = {};
+    const uploadedFiles: Record<string, Record<string, { name: string; driveId: string | undefined; uploadedAt: number }>> = {};
     for (const f of files) {
       if (!uploadedFiles[f.projectId]) {
         uploadedFiles[f.projectId] = {};

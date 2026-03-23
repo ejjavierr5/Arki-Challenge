@@ -8,8 +8,29 @@ import App from './App.tsx'
 
 declare global {
   interface Window {
-    gapi: any;
-    google: any;
+    gapi: {
+      load: (api: string, callback: () => void) => void;
+      auth2: {
+        getAuthInstance: () => unknown;
+      };
+    };
+    google: {
+      accounts: {
+        id: {
+          initialize: (config: unknown) => void;
+          renderButton: (element: HTMLElement, config: unknown) => void;
+        };
+        oauth2: {
+          initTokenClient: (config: {
+            client_id: string;
+            scope: string;
+            callback: (response: { access_token?: string }) => void;
+          }) => {
+            requestAccessToken: () => void;
+          };
+        };
+      };
+    };
   }
 }
 

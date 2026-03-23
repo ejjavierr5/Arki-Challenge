@@ -240,23 +240,6 @@ export default function Homepage() {
                 <Icons.Play size={18} /> See How It Works
               </a>
             </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-white/10">
-              {PLATFORM_STATS.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + i * 0.1 }}
-                  className="text-center"
-                >
-                  <stat.icon size={20} className="mx-auto mb-2 text-architectural-yellow" />
-                  <p className="text-2xl font-black text-white">{stat.value}</p>
-                  <p className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">{stat.label}</p>
-                </motion.div>
-              ))}
-            </div>
           </motion.div>
 
           {/* Right - Featured Design Showcase */}

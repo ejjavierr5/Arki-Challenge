@@ -688,8 +688,8 @@ export default function App() {
         setFriendCodeInput('');
         setAddFriendError('');
       }
-    } catch (error: any) {
-      setAddFriendError(error.message || 'Failed to add friend');
+    } catch (error: unknown) {
+      setAddFriendError(error instanceof Error ? error.message : 'Failed to add friend');
     }
   };
 
@@ -697,7 +697,7 @@ export default function App() {
   const totalXP = useMemo(() => {
     return projects
       .filter(p => submittedIds.includes(p.id))
-      .reduce((acc, p) => acc + ((p as any).xp || 0), 0);
+      .reduce((acc, p) => acc + (p.xp || 0), 0);
   }, [submittedIds]);
 
   const getLevelInfo = (xp: number) => {
@@ -725,7 +725,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    let interval: any;
+    let interval: number;
     if (pomoActive && pomoTime > 0) { interval = setInterval(() => setPomoTime(prev => prev - 1), 1000); }
     else if (pomoTime === 0) {
       setPomoActive(false);
@@ -772,7 +772,7 @@ export default function App() {
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
-      callback: (res: any) => { if (res.access_token) setAccessToken(res.access_token); },
+      callback: (res: { access_token?: string }) => { if (res.access_token) setAccessToken(res.access_token); },
     });
     client.requestAccessToken();
   };
@@ -794,7 +794,7 @@ export default function App() {
     }
 
     // Create new folder
-    const meta: any = { name, mimeType: 'application/vnd.google-apps.folder' };
+    const meta: { name: string; mimeType: string; parents?: string[] } = { name, mimeType: 'application/vnd.google-apps.folder' };
     if (parentId) meta.parents = [parentId];
     const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
       method: 'POST',
