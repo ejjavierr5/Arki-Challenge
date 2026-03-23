@@ -515,7 +515,26 @@ const DAILY_CHALLENGES: DailyChallenge[] = [
 
 export default function App() {
   const { user } = useUser();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'calendar' | 'gantt' | 'profile' | 'friends' | 'peers' | 'collab'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'calendar' | 'gantt' | 'moodboard' | 'profile' | 'friends' | 'peers' | 'collab'>('dashboard');
+  const [moodboardSubView, setMoodboardSubView] = useState<'canvas' | 'gantt'>('canvas');
+  
+  // Multi-Moodboard State
+  const [activeBoardId, setActiveBoardId] = useState<string>('default');
+  const [moodboards, setMoodboards] = useState<{ id: string; name: string; items: any[] }[]>([
+    { id: 'default', name: 'Board 01', items: [] },
+    { id: 'board-2', name: 'Board 02', items: [] }
+  ]);
+  
+  const currentBoard = useMemo(() => moodboards.find(b => b.id === activeBoardId) || moodboards[0], [moodboards, activeBoardId]);
+  const setMoodboardItems = (itemsOrFn: any) => {
+    setMoodboards(prev => prev.map(b => b.id === activeBoardId ? { 
+      ...b, 
+      items: typeof itemsOrFn === 'function' ? itemsOrFn(b.items) : itemsOrFn 
+    } : b));
+  };
+  const moodboardItems = currentBoard.items;
+
+  const moodboardFileInputRef = useRef<HTMLInputElement>(null);
   const [profileTab, setProfileTab] = useState<'profile' | 'friends' | 'collab'>('profile');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
@@ -1009,7 +1028,7 @@ export default function App() {
         <nav className="flex-1 space-y-1.5 overflow-y-auto pr-2 custom-scrollbar">
           <button onClick={() => setCurrentView('dashboard')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'dashboard' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.Activity size={16} /> Dashboard</button>
           <button onClick={() => setCurrentView('calendar')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'calendar' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.Calendar size={16} /> Calendar</button>
-          <button onClick={() => setCurrentView('gantt')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'gantt' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.GanttChart size={16} /> Gantt Chart</button>
+          <button onClick={() => { setCurrentView('moodboard'); setMoodboardSubView('canvas'); }} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'moodboard' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.Layers size={16} /> Mood Board</button>
           <button onClick={() => setCurrentView('profile')} className={cn("w-full flex items-center gap-3 p-3 rounded-lg text-xs font-mono transition-all", currentView === 'profile' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}><Icons.User size={16} /> Profile</button>
           <button onClick={() => setCurrentView('peers')} className={cn("w-full flex items-center justify-between p-3 rounded-lg text-xs font-mono transition-all", currentView === 'peers' ? "bg-white/5 text-architectural-yellow shadow-inner" : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]")}>
             <span className="flex items-center gap-3"><Icons.Users size={16} /> Studio Peers</span>
@@ -1222,157 +1241,267 @@ export default function App() {
               </div>
             </div>
           </motion.section>
-        ) : currentView === 'gantt' ? (
-          <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 h-full flex flex-col">
-            <header className="mb-10 flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-black uppercase tracking-tighter text-white">Gantt Chart</h1>
-                <p className="text-gray-500 font-mono text-[10px] uppercase tracking-widest mt-1">Production Timeline — Active Projects</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-[9px] font-mono uppercase text-gray-500"><span className="w-3 h-3 rounded-sm bg-blue-500/60 inline-block" />In Progress</div>
-                <div className="flex items-center gap-2 text-[9px] font-mono uppercase text-gray-500"><span className="w-3 h-3 rounded-sm bg-emerald-500/60 inline-block" />Submitted</div>
-                <div className="flex items-center gap-2 text-[9px] font-mono uppercase text-gray-500"><span className="w-3 h-3 rounded-sm bg-red-500/60 inline-block" />Overdue</div>
-              </div>
-            </header>
+        ) : currentView === 'moodboard' ? (
+           <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 h-full flex flex-col">
+             <header className="mb-6 flex items-center justify-between">
+               <div>
+                 <h1 className="text-4xl font-black uppercase tracking-tighter text-white">Mood Board</h1>
+                 <p className="text-gray-500 font-mono text-[10px] uppercase tracking-widest mt-1">Creative Canvas — Research & Inspiration</p>
+               </div>
+               <div className="flex items-center gap-4">
+                 <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+                    <button 
+                      onClick={() => setMoodboardSubView('canvas')}
+                      className={cn("px-4 py-2 rounded-lg text-[10px] font-mono font-black uppercase transition-all", moodboardSubView === 'canvas' ? "bg-white/10 text-architectural-yellow" : "text-gray-500 hover:text-gray-300")}
+                    >
+                      Canvas
+                    </button>
+                    <button 
+                      onClick={() => setMoodboardSubView('gantt')}
+                      className={cn("px-4 py-2 rounded-lg text-[10px] font-mono font-black uppercase transition-all", moodboardSubView === 'gantt' ? "bg-white/10 text-architectural-yellow" : "text-gray-500 hover:text-gray-300")}
+                    >
+                      Gantt Chart
+                    </button>
+                 </div>
+               </div>
+             </header>
 
-            {Object.keys(acceptedData).length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center bg-white/[0.01] border border-dashed border-white/5 rounded-[3rem]">
-                <Icons.GanttChart size={48} className="mx-auto text-gray-800 mb-4" />
-                <p className="text-gray-600 font-mono text-[10px] uppercase font-black">No active projects yet</p>
-                <p className="text-gray-700 font-mono text-[9px] uppercase mt-2">Start a project to see it on the timeline</p>
-              </div>
-            ) : (() => {
-              // Build timeline bounds
-              const acceptedProjects = projects.filter(p => acceptedData[p.id]);
-              const starts = acceptedProjects.map(p => acceptedData[p.id]);
-              const ends = acceptedProjects.map(p => acceptedData[p.id] + p.durationDays * 86400000);
-              const minTime = Math.min(...starts);
-              const maxTime = Math.max(...ends);
-              const totalMs = maxTime - minTime || 1;
-
-              // Build day columns
-              const totalDays = Math.ceil(totalMs / 86400000) + 1;
-              const dayLabels: Date[] = [];
-              for (let i = 0; i <= totalDays; i++) {
-                dayLabels.push(new Date(minTime + i * 86400000));
-              }
-              const today = Date.now();
-              const todayLeft = Math.max(0, Math.min(100, ((today - minTime) / totalMs) * 100));
-
-              const diffColor: Record<string, string> = {
-                Easy: 'bg-emerald-500',
-                Medium: 'bg-blue-500',
-                Hard: 'bg-orange-500',
-                Master: 'bg-red-500',
-              };
-
-              return (
-                <div className="flex-1 overflow-auto custom-scrollbar rounded-[2rem] border border-white/10 bg-white/[0.02] shadow-2xl">
-                  <div className="min-w-[900px]">
-
-                    {/* Day header */}
-                    <div className="flex border-b border-white/10 bg-white/5 sticky top-0 z-10">
-                      <div className="w-64 shrink-0 p-4 text-[9px] font-mono text-gray-500 uppercase font-black border-r border-white/10">Project</div>
-                      <div className="flex-1 relative h-12 overflow-hidden">
-                        {dayLabels.filter((_, i) => i % Math.max(1, Math.floor(totalDays / 12)) === 0).map((d, i) => (
-                          <div key={i} className="absolute top-0 h-full flex flex-col justify-center" style={{ left: `${((d.getTime() - minTime) / totalMs) * 100}%` }}>
-                            <span className="text-[8px] font-mono text-gray-600 whitespace-nowrap pl-1">{d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span>
-                          </div>
-                        ))}
-                        {/* Today line label */}
-                        <div className="absolute top-0 h-full flex flex-col justify-end pb-1" style={{ left: `${todayLeft}%` }}>
-                          <span className="text-[8px] font-mono text-architectural-yellow whitespace-nowrap pl-1 font-black">TODAY</span>
-                        </div>
-                      </div>
+             {moodboardSubView === 'canvas' ? (
+               <div className="flex-1 flex flex-col min-h-0">
+                  {/* Board Tabs & Tools */}
+                  <div className="flex items-center justify-between mb-4 px-2">
+                    <div className="flex gap-2">
+                      {moodboards.map(board => (
+                        <button 
+                          key={board.id}
+                          onClick={() => setActiveBoardId(board.id)}
+                          className={cn("px-4 py-2 rounded-xl text-[10px] font-mono font-black uppercase transition-all border", 
+                            activeBoardId === board.id ? "bg-architectural-yellow border-architectural-yellow text-black" : "bg-white/5 border-white/10 text-gray-500 hover:text-gray-300")}
+                        >
+                          {board.name}
+                        </button>
+                      ))}
+                      <button 
+                        onClick={() => {
+                          const name = prompt('Enter board name:');
+                          if (name) {
+                            const id = Math.random().toString(36).substr(2, 9);
+                            setMoodboards(prev => [...prev, { id, name, items: [] }]);
+                            setActiveBoardId(id);
+                          }
+                        }}
+                        className="w-10 h-10 rounded-xl bg-white/5 border border-dashed border-white/10 text-gray-500 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all"
+                      >
+                        <Icons.Plus size={16} />
+                      </button>
                     </div>
 
-                    {/* Rows */}
-                    {acceptedProjects.map((p, idx) => {
-                      const start = acceptedData[p.id];
-                      const end = start + p.durationDays * 86400000;
-                      const leftPct = ((start - minTime) / totalMs) * 100;
-                      const widthPct = ((end - start) / totalMs) * 100;
-                      const isSubmitted = submittedIds.includes(p.id);
-                      const isOverdue = !isSubmitted && today > end;
-                      const progress = getProgress(p.id);
+                    <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/5">
+                      <input 
+                        type="file" 
+                        ref={moodboardFileInputRef} 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const url = ev.target?.result as string;
+                              setMoodboardItems((prev: any) => [...prev, { id: Math.random().toString(36).substr(2, 9), type: 'image', url, x: 100, y: 100, width: 200 }]);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <button onClick={() => moodboardFileInputRef.current?.click()} className="p-2.5 text-gray-500 hover:text-architectural-yellow hover:bg-white/5 rounded-xl transition-all" title="Upload Image"><Icons.Image size={18} /></button>
+                      <button onClick={() => setMoodboardItems((prev: any) => [...prev, { id: Math.random().toString(36).substr(2, 9), type: 'text', content: 'New Note', x: 150, y: 150, width: 150, color: '#ffffff' }])} className="p-2.5 text-gray-500 hover:text-architectural-yellow hover:bg-white/5 rounded-xl transition-all" title="Add Text"><Icons.Type size={18} /></button>
+                      <button onClick={() => setMoodboardItems((prev: any) => [...prev, { id: Math.random().toString(36).substr(2, 9), type: 'shape', shape: 'rect', x: 200, y: 200, width: 100, height: 100, color: '#F4B400' }])} className="p-2.5 text-gray-500 hover:text-architectural-yellow hover:bg-white/5 rounded-xl transition-all" title="Add Shape"><Icons.Square size={18} /></button>
+                      <button onClick={() => setMoodboardItems((prev: any) => [...prev, { id: Math.random().toString(36).substr(2, 9), type: 'arrow', x: 250, y: 250, length: 100, angle: 45, color: '#ffffff' }])} className="p-2.5 text-gray-500 hover:text-architectural-yellow hover:bg-white/5 rounded-xl transition-all" title="Add Arrow"><Icons.ArrowUpRight size={18} /></button>
+                      <div className="w-px h-6 bg-white/10 mx-1" />
+                      <button onClick={() => setMoodboardItems([])} className="p-2.5 text-gray-500 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all" title="Clear Board"><Icons.Trash2 size={18} /></button>
+                    </div>
+                  </div>
 
-                      const barColor = isSubmitted
-                        ? 'bg-emerald-500/70 border-emerald-400/40'
-                        : isOverdue
-                        ? 'bg-red-500/70 border-red-400/40'
-                        : 'bg-blue-500/60 border-blue-400/30';
+                  <div className="flex-1 bg-white/[0.01] border border-white/5 rounded-[3rem] relative overflow-hidden custom-scrollbar group shadow-2xl">
+                    {/* Radial Grid Pattern */}
+                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
 
-                      return (
-                        <div key={p.id} className={cn("flex border-b border-white/5 hover:bg-white/[0.02] transition-all group", idx % 2 === 0 ? '' : 'bg-black/10')}>
-                          {/* Project label */}
-                          <div className="w-64 shrink-0 p-4 border-r border-white/5 flex flex-col justify-center gap-1 cursor-pointer" onClick={() => setSelectedProject(p)}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[8px] font-mono text-architectural-yellow bg-architectural-yellow/10 px-1.5 py-0.5 rounded">{p.plateNumber}</span>
-                              <span className={cn("text-[8px] font-mono px-1.5 py-0.5 rounded border", {
-                                Easy: 'text-emerald-400 border-emerald-400/20',
-                                Medium: 'text-blue-400 border-blue-400/20',
-                                Hard: 'text-orange-400 border-orange-400/20',
-                                Master: 'text-red-400 border-red-400/20',
-                              }[p.difficulty])}>{p.difficulty}</span>
-                            </div>
-                            <p className="text-[11px] font-bold text-white truncate group-hover:text-architectural-yellow transition-colors">{p.title}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
-                                <div className={cn("h-full rounded-full transition-all", diffColor[p.difficulty] || 'bg-blue-500')} style={{ width: `${progress}%`, opacity: 0.7 }} />
-                              </div>
-                              <span className="text-[8px] font-mono text-gray-500">{progress}%</span>
-                            </div>
-                          </div>
-
-                          {/* Bar area */}
-                          <div className="flex-1 relative py-4 px-2">
-                            {/* Grid lines */}
-                            {dayLabels.filter((_, i) => i % Math.max(1, Math.floor(totalDays / 12)) === 0).map((d, i) => (
-                              <div key={i} className="absolute top-0 h-full w-px bg-white/[0.03]" style={{ left: `${((d.getTime() - minTime) / totalMs) * 100}%` }} />
-                            ))}
-
-                            {/* Today line */}
-                            <div className="absolute top-0 h-full w-px bg-architectural-yellow/40 z-10" style={{ left: `${todayLeft}%` }} />
-
-                            {/* Gantt bar */}
-                            <div
-                              className={cn("absolute top-1/2 -translate-y-1/2 h-8 rounded-xl border flex items-center px-3 cursor-pointer hover:brightness-125 transition-all shadow-lg", barColor)}
-                              style={{ left: `${leftPct}%`, width: `${Math.max(widthPct, 1)}%` }}
-                              onClick={() => setSelectedProject(p)}
-                            >
-                              <div className="flex items-center gap-2 overflow-hidden">
-                                {isSubmitted && <Icons.CheckCircle size={10} className="text-emerald-300 shrink-0" />}
-                                {isOverdue && <Icons.AlertTriangle size={10} className="text-red-300 shrink-0" />}
-                                {!isSubmitted && !isOverdue && <Icons.Clock size={10} className="text-blue-300 shrink-0" />}
-                                <span className="text-[9px] font-mono font-black text-white truncate">
-                                  {isSubmitted ? 'LODGED' : isOverdue ? 'OVERDUE' : getRemainingTime(p.id)?.text}
-                                </span>
-                              </div>
-                              {/* Progress fill */}
-                              {!isSubmitted && (
-                                <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-                                  <div className="h-full bg-white/10 rounded-xl" style={{ width: `${progress}%` }} />
+                    {moodboardItems.length === 0 ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-12">
+                        <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mb-6 text-gray-700">
+                          <Icons.Layers size={48} />
+                        </div>
+                        <h3 className="text-2xl font-black text-white uppercase mb-2 tracking-tighter">Empty Canvas</h3>
+                        <p className="text-gray-500 font-mono text-xs uppercase max-w-xs leading-relaxed font-black">Sketch your vision. Map your site. Define your intent.</p>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full p-20 relative">
+                        {moodboardItems.map((item: any) => (
+                          <motion.div
+                            key={item.id}
+                            drag
+                            dragMomentum={false}
+                            initial={{ x: item.x, y: item.y }}
+                            style={{ position: 'absolute', cursor: 'grab', zIndex: 20 }}
+                            onDragEnd={(_, info) => {
+                              setMoodboardItems((prev: any) => prev.map((i: any) => i.id === item.id ? { ...i, x: i.x + info.offset.x, y: i.y + info.offset.y } : i));
+                            }}
+                            className="group/item"
+                          >
+                            <div className="relative group/content">
+                              {item.type === 'image' && (
+                                <div className="rounded-xl overflow-hidden border border-white/10 shadow-2xl group-hover/item:border-architectural-yellow/50 transition-all duration-300" style={{ width: item.width }}>
+                                  <img src={item.url} alt="" className="w-full h-auto block select-none pointer-events-none" />
                                 </div>
                               )}
+                              {item.type === 'text' && (
+                                <div className="p-4 min-w-[150px] bg-white/[0.02] border border-white/10 rounded-xl shadow-xl" style={{ width: item.width }}>
+                                  <textarea 
+                                    value={item.content}
+                                    onChange={(e) => setMoodboardItems((prev: any) => prev.map((i: any) => i.id === item.id ? { ...i, content: e.target.value } : i))}
+                                    className="w-full bg-transparent text-gray-300 font-mono text-sm outline-none resize-none placeholder:text-white/10"
+                                    rows={3}
+                                    placeholder="Write something..."
+                                  />
+                                </div>
+                              )}
+                              {item.type === 'shape' && (
+                                <div 
+                                  className={cn("border-2 border-white/20 shadow-xl", item.shape === 'rect' ? 'rounded-lg' : 'rounded-full')}
+                                  style={{ width: item.width, height: item.height, backgroundColor: `${item.color}44`, borderColor: item.color }}
+                                />
+                              )}
+                              {item.type === 'arrow' && (
+                                <div className="flex items-center gap-2 text-white/60">
+                                   <div className={cn("h-1 rounded-full relative", item.color ? "" : "bg-white/40")} style={{ width: item.length || 64, backgroundColor: item.color }}>
+                                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 border-t-2 border-r-2 rotate-45" style={{ borderColor: item.color || 'rgba(255,255,255,0.4)' }} />
+                                   </div>
+                                </div>
+                              )}
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setMoodboardItems((prev: any) => prev.filter((i: any) => i.id !== item.id)); }}
+                                className="absolute -top-3 -right-3 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover/content:opacity-100 transition-opacity z-50 shadow-lg"
+                              >
+                                <Icons.X size={12} />
+                              </button>
                             </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+               </div>
+             ) : (
+                <div className="flex-1 flex flex-col min-h-0">
+                  <div className="mb-6 flex items-center justify-between">
+                    <p className="text-gray-500 font-mono text-[10px] uppercase tracking-widest mt-1">Production Timeline — Active Projects</p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 text-[9px] font-mono uppercase text-gray-500"><span className="w-3 h-3 rounded-sm bg-blue-500/60 inline-block" />In Progress</div>
+                      <div className="flex items-center gap-2 text-[9px] font-mono uppercase text-gray-500"><span className="w-3 h-3 rounded-sm bg-emerald-500/60 inline-block" />Submitted</div>
+                      <div className="flex items-center gap-2 text-[9px] font-mono uppercase text-gray-500"><span className="w-3 h-3 rounded-sm bg-red-500/60 inline-block" />Overdue</div>
+                    </div>
+                  </div>
 
-                            {/* Start/end date labels */}
-                            <div className="absolute bottom-1 text-[7px] font-mono text-gray-600 whitespace-nowrap" style={{ left: `${leftPct}%` }}>
-                              {new Date(start).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                  {Object.keys(acceptedData).length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center bg-white/[0.01] border border-dashed border-white/5 rounded-[3rem]">
+                      <Icons.GanttChart size={48} className="mx-auto text-gray-800 mb-4" />
+                      <p className="text-gray-600 font-mono text-[10px] uppercase font-black">No active projects yet</p>
+                      <p className="text-gray-700 font-mono text-[9px] uppercase mt-2">Start a project to see it on the timeline</p>
+                    </div>
+                  ) : (() => {
+                    // Build timeline bounds
+                    const acceptedProjects = projects.filter(p => acceptedData[p.id]);
+                    const starts = acceptedProjects.map(p => acceptedData[p.id]);
+                    const ends = acceptedProjects.map(p => acceptedData[p.id] + p.durationDays * 86400000);
+                    const minTime = Math.min(...starts);
+                    const maxTime = Math.max(...ends);
+                    const totalMs = maxTime - minTime || 1;
+
+                    // Build day columns
+                    const totalDays = Math.ceil(totalMs / 86400000) + 1;
+                    const dayLabels: Date[] = [];
+                    for (let i = 0; i <= totalDays; i++) {
+                      dayLabels.push(new Date(minTime + i * 86400000));
+                    }
+                    const today = Date.now();
+                    const todayLeft = Math.max(0, Math.min(100, ((today - minTime) / totalMs) * 100));
+
+                    const diffColor: Record<string, string> = {
+                      Easy: 'bg-emerald-500',
+                      Medium: 'bg-blue-500',
+                      Hard: 'bg-orange-500',
+                      Master: 'bg-red-500',
+                    };
+
+                    return (
+                      <div className="flex-1 overflow-auto custom-scrollbar rounded-[2rem] border border-white/10 bg-white/[0.02] shadow-2xl">
+                        <div className="min-w-[900px]">
+
+                          {/* Day header */}
+                          <div className="flex border-b border-white/10 bg-white/5 sticky top-0 z-10">
+                            <div className="w-64 shrink-0 p-4 text-[9px] font-mono text-gray-500 uppercase font-black border-r border-white/10">Project</div>
+                            <div className="flex-1 relative h-12 overflow-hidden">
+                              {dayLabels.filter((_, i) => i % Math.max(1, Math.floor(totalDays / 12)) === 0).map((d, i) => (
+                                <div key={i} className="absolute top-0 h-full flex flex-col justify-center" style={{ left: `${((d.getTime() - minTime) / totalMs) * 100}%` }}>
+                                  <span className="text-[8px] font-mono text-gray-600 whitespace-nowrap pl-1">{d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span>
+                                </div>
+                              ))}
+                              {/* Today line label */}
+                              <div className="absolute top-0 h-full flex flex-col justify-end pb-1" style={{ left: `${todayLeft}%` }}>
+                                <span className="text-[8px] font-mono text-architectural-yellow whitespace-nowrap pl-1 font-black">TODAY</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
 
-                  </div>
+                          {/* Rows */}
+                          <div className="divide-y divide-white/5 relative">
+                            {/* Today line */}
+                            <div className="absolute top-0 bottom-0 w-px bg-architectural-yellow/40 z-[5] pointer-events-none" style={{ left: `calc(16rem + ${todayLeft}%)` }}>
+                              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-architectural-yellow rounded-full shadow-[0_0_10px_rgba(244,180,0,0.5)]" />
+                            </div>
+
+                            {acceptedProjects.map((p) => {
+                              const start = acceptedData[p.id];
+                              const end = start + p.durationDays * 86400000;
+                              const left = ((start - minTime) / totalMs) * 100;
+                              const width = ((p.durationDays * 86400000) / totalMs) * 100;
+                              const isSubmitted = submittedIds.includes(p.id);
+                              const isOverdue = !isSubmitted && today > end;
+
+                              return (
+                                <div key={p.id} className="flex hover:bg-white/[0.02] transition-colors group/row">
+                                  <div className="w-64 shrink-0 p-4 border-r border-white/10 flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold text-white uppercase truncate">{p.plateNumber}</span>
+                                    <span className="text-[8px] font-mono text-gray-500 uppercase truncate font-black">{p.category}</span>
+                                  </div>
+                                  <div className="flex-1 relative h-16 flex items-center px-4">
+                                    <div 
+                                      className={cn(
+                                        "h-8 rounded-xl border relative transition-all group-hover/row:brightness-110",
+                                        isSubmitted ? "bg-emerald-500/20 border-emerald-500/30" : isOverdue ? "bg-red-500/20 border-red-500/30" : "bg-blue-500/20 border-blue-500/30"
+                                      )}
+                                      style={{ left: `${left}%`, width: `${width}%` }}
+                                    >
+                                      <div className={cn("absolute inset-0 opacity-20", diffColor[p.difficulty])} style={{ width: '100%' }} />
+                                      <div className="absolute inset-0 flex items-center px-3 justify-between pointer-events-none">
+                                        <span className="text-[9px] font-black text-white/60 uppercase truncate">{p.difficulty}</span>
+                                        {isSubmitted && <Icons.Check size={10} className="text-emerald-400" />}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
-              );
-            })()}
-          </motion.section>
-        ) : currentView === 'profile' ? (
-          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+             )}
+           </motion.section>
+        ) : currentView === 'profile' ? (          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
 
             {/* Profile / Friends / Collab Tab Switch */}
             <div className="flex gap-2 p-1.5 bg-white/5 border border-white/10 rounded-2xl w-fit">
