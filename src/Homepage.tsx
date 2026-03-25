@@ -177,7 +177,7 @@ export default function Homepage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center pt-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-2 gap-16 items-start">
           {/* Left Content */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -234,12 +234,12 @@ export default function Homepage() {
             </div>
           </motion.div>
 
-          {/* Right - Featured Design Showcase */}
+          {/* Right - Featured Design Showcase - Hidden on Mobile */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
+            className="relative lg:mt-0 hidden md:block"
           >
             <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
               <AnimatePresence mode="wait">
