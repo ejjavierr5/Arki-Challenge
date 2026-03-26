@@ -1,10 +1,10 @@
-# Arki-Challenge
+# Archimedian
 
 Architecture practice and challenge platform for architecture students and professionals in the Philippines.
 
 ## Project Overview
 
-Arki-Challenge is a web application that provides structured architecture design challenges with detailed project briefs, room programs, site specifications, and design requirements. Users can practice their architectural design skills through:
+Archimedian is a web application that provides structured architecture design challenges with detailed project briefs, room programs, site specifications, and design requirements. Users can practice their architectural design skills through:
 
 - **40+ Architecture Projects**: Ranging from residential micro-homes to master-level mixed-use towers
 - **Daily Design Challenges**: Quick exercises with specific constraints and deliverables
@@ -32,7 +32,7 @@ Arki-Challenge is a web application that provides structured architecture design
 ## Project Structure
 
 ```
-Arki-Challenge/
+Archimedian/
 ├── src/
 │   ├── App.tsx                 # Root component (renders ProjectDashboard)
 │   ├── main.tsx                # Entry point, React root, Google API types

@@ -513,6 +513,22 @@ const DAILY_CHALLENGES: DailyChallenge[] = [
   },
 ];
 
+const ResizeHandle = ({ onResize, className }: { onResize: (dx: number, dy: number) => void, className?: string }) => {
+  return (
+    <motion.div
+      drag
+      dragMomentum={false}
+      onDrag={(_, info) => {
+        onResize(info.delta.x, info.delta.y);
+      }}
+      className={cn("absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-50 opacity-0 group-hover/content:opacity-100 transition-opacity bg-white/20 rounded-full border border-white/40 hover:bg-architectural-yellow hover:border-architectural-yellow flex items-center justify-center shadow-lg", className)}
+      onDragStart={(e) => e.stopPropagation()}
+    >
+      <div className="w-1 h-1 bg-white rounded-full opacity-50" />
+    </motion.div>
+  );
+};
+
 export default function App() {
   const { user } = useUser();
   const [currentView, setCurrentView] = useState<'dashboard' | 'calendar' | 'gantt' | 'moodboard' | 'profile' | 'friends' | 'peers' | 'collab'>('dashboard');
@@ -859,8 +875,8 @@ export default function App() {
     setUploadingFile(fileName);
 
     try {
-      // 1. Get or create root "Arki Challenge" folder
-      const rootFolderId = await getOrCreateFolder('Arki Challenge', null, accessToken);
+      // 1. Get or create root "ArchiMedian" folder
+      const rootFolderId = await getOrCreateFolder('ArchiMedian', null, accessToken);
 
       // 2. Get or create project subfolder e.g. "[PLATE-07] Greenfield Elementary School"
       const projectFolderName = `${selectedProject.plateNumber} — ${selectedProject.title}`;
@@ -916,14 +932,14 @@ export default function App() {
     setNewEntry('');
   };
 
-  // Upload challenge deliverable to Google Drive → Arki Challenge / Daily Challenges / [date] Challenge Title
+  // Upload challenge deliverable to Google Drive → ArchiMedian / Daily Challenges / [date] Challenge Title
   const handleChallengeFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !challengeAccepted || !accessToken) return;
     setUploadingChallenge(true);
     try {
-      // 1. Root Arki Challenge folder
-      const rootId = await getOrCreateFolder('Arki Challenge', null, accessToken);
+      // 1. Root ArchiMedian folder
+      const rootId = await getOrCreateFolder('ArchiMedian', null, accessToken);
       // 2. Daily Challenges subfolder
       const challengesFolderId = await getOrCreateFolder('Daily Challenges', rootId, accessToken);
       // 3. Per-challenge folder: [Mar 15] The 9sqm Studio
@@ -1007,7 +1023,7 @@ export default function App() {
       <aside className="w-64 border-r border-white/10 bg-black/40 backdrop-blur-2xl fixed h-full z-[60] flex flex-col p-6 shadow-2xl">
         <a href="/" className="flex items-center gap-3 mb-6 group">
           <div className="w-10 h-10 bg-architectural-yellow text-black flex items-center justify-center font-bold text-xl rounded-xl shadow-lg group-hover:scale-105 transition-transform">A</div>
-          <div className="font-mono text-[10px] font-bold uppercase tracking-widest leading-tight text-white group-hover:text-architectural-yellow transition-colors">Arki<br />Challenge</div>
+          <div className="font-mono text-[10px] font-bold uppercase tracking-widest leading-tight text-white group-hover:text-architectural-yellow transition-colors">ArchiMedian</div>
         </a>
         
         {/* User Profile Section */}
@@ -1351,12 +1367,13 @@ export default function App() {
                           >
                             <div className="relative group/content">
                               {item.type === 'image' && (
-                                <div className="rounded-xl overflow-hidden border border-white/10 shadow-2xl group-hover/item:border-architectural-yellow/50 transition-all duration-300" style={{ width: item.width }}>
+                                <div className="rounded-xl overflow-hidden border border-white/10 shadow-2xl group-hover/item:border-architectural-yellow/50 transition-all duration-300 relative" style={{ width: item.width }}>
                                   <img src={item.url} alt="" className="w-full h-auto block select-none pointer-events-none" />
+                                  <ResizeHandle onResize={(dx) => setMoodboardItems((prev: any) => prev.map((i: any) => i.id === item.id ? { ...i, width: Math.max(50, (i.width || 200) + dx) } : i))} />
                                 </div>
                               )}
                               {item.type === 'text' && (
-                                <div className="p-4 min-w-[150px] bg-white/[0.02] border border-white/10 rounded-xl shadow-xl" style={{ width: item.width }}>
+                                <div className="p-4 min-w-[150px] bg-white/[0.02] border border-white/10 rounded-xl shadow-xl relative" style={{ width: item.width }}>
                                   <textarea 
                                     value={item.content}
                                     onChange={(e) => setMoodboardItems((prev: any) => prev.map((i: any) => i.id === item.id ? { ...i, content: e.target.value } : i))}
@@ -1364,18 +1381,22 @@ export default function App() {
                                     rows={3}
                                     placeholder="Write something..."
                                   />
+                                  <ResizeHandle onResize={(dx) => setMoodboardItems((prev: any) => prev.map((i: any) => i.id === item.id ? { ...i, width: Math.max(100, (i.width || 150) + dx) } : i))} />
                                 </div>
                               )}
                               {item.type === 'shape' && (
                                 <div 
-                                  className={cn("border-2 border-white/20 shadow-xl", item.shape === 'rect' ? 'rounded-lg' : 'rounded-full')}
+                                  className={cn("border-2 border-white/20 shadow-xl relative", item.shape === 'rect' ? 'rounded-lg' : 'rounded-full')}
                                   style={{ width: item.width, height: item.height, backgroundColor: `${item.color}44`, borderColor: item.color }}
-                                />
+                                >
+                                  <ResizeHandle onResize={(dx, dy) => setMoodboardItems((prev: any) => prev.map((i: any) => i.id === item.id ? { ...i, width: Math.max(20, (i.width || 100) + dx), height: Math.max(20, (i.height || 100) + dy) } : i))} />
+                                </div>
                               )}
                               {item.type === 'arrow' && (
-                                <div className="flex items-center gap-2 text-white/60">
+                                <div className="flex items-center gap-2 text-white/60 relative group/arrow">
                                    <div className={cn("h-1 rounded-full relative", item.color ? "" : "bg-white/40")} style={{ width: item.length || 64, backgroundColor: item.color }}>
                                       <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 border-t-2 border-r-2 rotate-45" style={{ borderColor: item.color || 'rgba(255,255,255,0.4)' }} />
+                                      <ResizeHandle onResize={(dx) => setMoodboardItems((prev: any) => prev.map((i: any) => i.id === item.id ? { ...i, length: Math.max(20, (i.length || 64) + dx) } : i))} className="-bottom-1 -right-4" />
                                    </div>
                                 </div>
                               )}
@@ -2610,7 +2631,7 @@ export default function App() {
                         {uploadingChallenge ? <><Icons.Loader size={13} className="animate-spin" /> Uploading...</> : <><Icons.Upload size={13} /> Upload Deliverable</>}
                       </button>
                     )}
-                    <p className="text-[9px] font-mono text-gray-700 text-center">Saved to: Arki Challenge → Daily Challenges → [{new Date(challengeAccepted.acceptedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}] {challengeAccepted.title}</p>
+                    <p className="text-[9px] font-mono text-gray-700 text-center">Saved to: ArchiMedian → Daily Challenges → [{new Date(challengeAccepted.acceptedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}] {challengeAccepted.title}</p>
                   </div>
                 )}
 

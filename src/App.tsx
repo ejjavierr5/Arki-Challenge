@@ -327,7 +327,7 @@ function SignInPage() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest">
-            Arki Challenge · Practice Architecture Like a Pro
+            Archimedian · Practice Architecture Like a Pro
           </p>
         </div>
       </div>
@@ -368,7 +368,7 @@ function SignUpPage() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest">
-            Arki Challenge · Practice Architecture Like a Pro
+            Archimedian · Practice Architecture Like a Pro
           </p>
         </div>
       </div>

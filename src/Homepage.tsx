@@ -127,7 +127,7 @@ export default function Homepage() {
                 A
               </div>
               <div className="font-mono text-[10px] font-bold uppercase tracking-widest leading-tight text-white">
-                Arki<br />Challenge
+                Archimedian
               </div>
             </div>
 
@@ -699,7 +699,7 @@ export default function Homepage() {
                 A
               </div>
               <span className="font-mono text-[10px] text-gray-500 uppercase tracking-widest">
-                Arki Challenge · 2024
+                Archimedian · 2026
               </span>
             </div>
             <p className="text-xs font-mono text-gray-600 text-center md:text-right">
